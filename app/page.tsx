@@ -56,10 +56,6 @@ export default function Home() {
 
   useEffect(() => {
     loadMatches();
-
-    const interval = setInterval(loadMatches, 30000);
-
-    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -97,28 +93,16 @@ export default function Home() {
           <a href="/" style={{ color: "white", textDecoration: "none" }}>
             Live
           </a>
-          <a
-            href="/matches"
-            style={{ color: "white", textDecoration: "none" }}
-          >
+          <a href="/matches" style={{ color: "white", textDecoration: "none" }}>
             Matches
           </a>
-          <a
-            href="/results"
-            style={{ color: "white", textDecoration: "none" }}
-          >
+          <a href="/results" style={{ color: "white", textDecoration: "none" }}>
             Results
           </a>
-          <a
-            href="/standings"
-            style={{ color: "white", textDecoration: "none" }}
-          >
+          <a href="/standings" style={{ color: "white", textDecoration: "none" }}>
             Standings
           </a>
-          <a
-            href="/stats"
-            style={{ color: "white", textDecoration: "none" }}
-          >
+          <a href="/stats" style={{ color: "white", textDecoration: "none" }}>
             Stats
           </a>
         </nav>
@@ -148,15 +132,18 @@ export default function Home() {
           )}
 
           {matches.map((match) => (
-            <div
+            <a
               key={match.fixture.id}
+              href={`/matches/${match.fixture.id}`}
               style={{
-                borderTop: "1px solid #e5e7eb",
-                padding: "18px 0",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
                 gap: "20px",
+                borderTop: "1px solid #e5e7eb",
+                padding: "18px 0",
+                textDecoration: "none",
+                color: "#111827",
               }}
             >
               <div style={{ flex: 1 }}>
@@ -228,7 +215,7 @@ export default function Home() {
                     : match.fixture.status.short}
                 </span>
               </div>
-            </div>
+            </a>
           ))}
         </div>
       </section>

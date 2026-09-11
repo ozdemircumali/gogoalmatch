@@ -1,3 +1,5 @@
+import VisualLineup from "@/components/VisualLineup";
+
 interface MatchPageProps {
   params: {
     id: string;
@@ -116,6 +118,59 @@ export default async function MatchDetailPage({
     goals?.away ??
     score?.goals?.away ??
     0;
+
+  // VisualLineup için mock / API verisi hazırlığı
+  const homeLineupData = {
+    name: teams?.home?.name || "Home Team",
+    formation: lineups?.[0]?.formation || "4-2-3-1",
+    logo: teams?.home?.logo,
+    players: lineups?.[0]?.startXI?.map((item: any, i: number) => ({
+      id: item.player?.id || i,
+      number: item.player?.number || i + 1,
+      name: item.player?.name || "Player",
+      position: item.player?.pos || "MF",
+      x: 20 + ((i % 4) * 20),
+      y: 15 + Math.floor(i / 3) * 20,
+    })) || [
+      { id: 1, number: 1, name: "Muslera", position: "GK", x: 50, y: 10, rating: 7.2 },
+      { id: 2, number: 23, name: "Ayhan", position: "DF", x: 15, y: 30, rating: 6.8 },
+      { id: 3, number: 6, name: "Davinson", position: "DF", x: 38, y: 25, rating: 7.5 },
+      { id: 4, number: 42, name: "Bardakcı", position: "DF", x: 62, y: 25, rating: 7.1 },
+      { id: 5, number: 18, name: "Jakobs", position: "DF", x: 85, y: 30, rating: 6.9 },
+      { id: 6, number: 34, name: "Torreira", position: "MF", x: 35, y: 55, rating: 7.8 },
+      { id: 7, number: 8, name: "Sara", position: "MF", x: 65, y: 55, rating: 8.2 },
+      { id: 8, number: 53, name: "Barış", position: "FW", x: 20, y: 75, rating: 7.0 },
+      { id: 9, number: 10, name: "Mertens", position: "FW", x: 50, y: 72, rating: 7.6 },
+      { id: 10, number: 11, name: "Yunus", position: "FW", x: 80, y: 75, rating: 7.4 },
+      { id: 11, number: 9, name: "Icardi", position: "FW", x: 50, y: 90, rating: 8.5 },
+    ]
+  };
+
+  const awayLineupData = {
+    name: teams?.away?.name || "Away Team",
+    formation: lineups?.[1]?.formation || "4-3-3",
+    logo: teams?.away?.logo,
+    players: lineups?.[1]?.startXI?.map((item: any, i: number) => ({
+      id: item.player?.id || i + 100,
+      number: item.player?.number || i + 1,
+      name: item.player?.name || "Player",
+      position: item.player?.pos || "MF",
+      x: 20 + ((i % 4) * 20),
+      y: 15 + Math.floor(i / 3) * 20,
+    })) || [
+      { id: 12, number: 40, name: "Livadovıć", position: "GK", x: 50, y: 90, rating: 6.7 },
+      { id: 13, number: 16, name: "Müldür", position: "DF", x: 85, y: 70, rating: 6.5 },
+      { id: 14, number: 50, name: "Becão", position: "DF", x: 62, y: 75, rating: 6.9 },
+      { id: 15, number: 6, name: "Djiku", position: "DF", x: 38, y: 75, rating: 7.1 },
+      { id: 16, number: 24, name: "Oosterwolde", position: "DF", x: 15, y: 70, rating: 6.8 },
+      { id: 17, number: 34, name: "Amrabat", position: "MF", x: 50, y: 52, rating: 7.0 },
+      { id: 18, number: 8, name: "Yandaş", position: "MF", x: 30, y: 40, rating: 6.4 },
+      { id: 19, number: 53, name: "Szymański", position: "MF", x: 70, y: 40, rating: 7.2 },
+      { id: 20, number: 10, name: "Tadić", position: "FW", x: 15, y: 20, rating: 7.3 },
+      { id: 21, number: 19, name: "En-Nesyri", position: "FW", x: 50, y: 15, rating: 6.6 },
+      { id: 22, number: 97, name: "Maximin", position: "FW", x: 85, y: 20, rating: 7.1 },
+    ]
+  };
 
   return (
     <>
@@ -354,19 +409,6 @@ export default async function MatchDetailPage({
           text-align: center;
           color: #91a098;
           font-size: 12px;
-        }
-
-        .stat-bar {
-          height: 5px;
-          background: #1b3024;
-          border-radius: 5px;
-          overflow: hidden;
-          margin-top: 5px;
-        }
-
-        .stat-fill {
-          height: 100%;
-          background: #55e58b;
         }
 
         .info-grid {
@@ -720,8 +762,17 @@ export default async function MatchDetailPage({
           </div>
         </section>
 
+        {/* GÖRSEL SAHA KADRO BİLEŞENİ */}
         <section className="card">
-          <h2>Lineups</h2>
+          <h2>Visual Lineups</h2>
+          <VisualLineup 
+            homeTeam={homeLineupData} 
+            awayTeam={awayLineupData} 
+          />
+        </section>
+
+        <section className="card">
+          <h2>Lineups List</h2>
 
           {!lineups ||
           lineups.length === 0 ? (

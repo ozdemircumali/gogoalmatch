@@ -98,23 +98,30 @@ export default function Home() {
     <main
       style={{
         minHeight: "100vh",
-        background: "#f3f4f6",
-        color: "#111827",
-        fontFamily: "Arial, Helvetica, sans-serif",
+        background:
+          "linear-gradient(180deg, #060a13 0%, #0a0f1c 40%, #0b1120 100%)",
+        color: "#e5e7eb",
+        fontFamily:
+          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
       }}
     >
       {/* HEADER */}
       <header
+        className="ggm-header"
         style={{
-          background: "#111827",
-          color: "white",
+          position: "sticky",
+          top: 0,
+          zIndex: 50,
+          background: "rgba(8, 12, 22, 0.92)",
+          backdropFilter: "blur(10px)",
+          borderBottom: "1px solid rgba(34, 197, 94, 0.15)",
         }}
       >
         <div
           style={{
             maxWidth: "1200px",
             margin: "0 auto",
-            padding: "18px 20px",
+            padding: "16px 20px",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -122,82 +129,80 @@ export default function Home() {
             flexWrap: "wrap",
           }}
         >
-          <div>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <div
               style={{
-                fontSize: "26px",
-                fontWeight: 800,
+                width: "36px",
+                height: "36px",
+                borderRadius: "10px",
+                background: "linear-gradient(135deg, #22c55e, #16a34a)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 900,
+                fontSize: "18px",
+                color: "#04170c",
+                boxShadow: "0 0 18px rgba(34, 197, 94, 0.35)",
+                flexShrink: 0,
               }}
             >
-              GoGoalMatch
+              G
             </div>
 
-            <div
-              style={{
-                color: "#9ca3af",
-                fontSize: "12px",
-                marginTop: "3px",
-              }}
-            >
-              Live Football Scores
+            <div>
+              <div
+                style={{
+                  fontSize: "22px",
+                  fontWeight: 800,
+                  lineHeight: 1,
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                GoGoal
+                <span style={{ color: "#22c55e" }}>Match</span>
+              </div>
+
+              <div
+                style={{
+                  color: "#64748b",
+                  fontSize: "11px",
+                  marginTop: "4px",
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Live Football Scores
+              </div>
             </div>
           </div>
 
           <nav
+            className="ggm-nav"
             style={{
               display: "flex",
-              gap: "20px",
+              gap: "6px",
               flexWrap: "wrap",
+              alignItems: "center",
             }}
           >
-            <a
-              href="/"
-              style={{
-                color: "#22c55e",
-                textDecoration: "none",
-                fontWeight: 700,
-              }}
-            >
+            <a href="/" className="ggm-nav-link ggm-nav-link-active">
+              <span className="ggm-live-dot" />
               LIVE
             </a>
 
-            <a
-              href="/matches"
-              style={{
-                color: "#d1d5db",
-                textDecoration: "none",
-              }}
-            >
+            <a href="/matches" className="ggm-nav-link">
               Matches
             </a>
 
-            <a
-              href="/results"
-              style={{
-                color: "#d1d5db",
-                textDecoration: "none",
-              }}
-            >
+            <a href="/results" className="ggm-nav-link">
               Results
             </a>
 
-            <a
-              href="/standings"
-              style={{
-                color: "#d1d5db",
-                textDecoration: "none",
-              }}
-            >
+            <a href="/standings" className="ggm-nav-link">
               Standings
             </a>
 
-            <a
-              href="/stats"
-              style={{
-                color: "#d1d5db",
-                textDecoration: "none",
-              }}
-            >
+            <a href="/stats" className="ggm-nav-link">
               Stats
             </a>
           </nav>
@@ -208,16 +213,20 @@ export default function Home() {
         style={{
           maxWidth: "1200px",
           margin: "0 auto",
-          padding: "28px 20px 50px",
+          padding: "28px 20px 60px",
         }}
       >
         {loading ? (
           <div
             style={{
-              background: "white",
-              padding: "50px",
-              borderRadius: "14px",
+              background: "#0f1626",
+              border: "1px solid #1e293b",
+              padding: "60px 20px",
+              borderRadius: "16px",
               textAlign: "center",
+              color: "#94a3b8",
+              fontSize: "14px",
+              fontWeight: 600,
             }}
           >
             Loading matches...
@@ -256,16 +265,85 @@ export default function Home() {
 
       <footer
         style={{
-          background: "white",
-          borderTop: "1px solid #e5e7eb",
-          padding: "25px 20px",
+          borderTop: "1px solid #1e293b",
+          padding: "28px 20px",
           textAlign: "center",
-          color: "#6b7280",
+          color: "#475569",
           fontSize: "12px",
         }}
       >
-        © {new Date().getFullYear()} GoGoalMatch
+        © {new Date().getFullYear()} GoGoalMatch — All match data provided
+        for informational purposes.
       </footer>
+
+      <style jsx global>{`
+        .ggm-nav-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          color: #94a3b8;
+          text-decoration: none;
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 0.02em;
+          padding: 8px 14px;
+          border-radius: 20px;
+          transition: background 0.15s ease, color 0.15s ease;
+        }
+        .ggm-nav-link:hover {
+          color: #e5e7eb;
+          background: rgba(148, 163, 184, 0.08);
+        }
+        .ggm-nav-link-active {
+          color: #22c55e;
+          background: rgba(34, 197, 94, 0.12);
+        }
+        .ggm-nav-link-active:hover {
+          color: #22c55e;
+          background: rgba(34, 197, 94, 0.18);
+        }
+        .ggm-live-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #22c55e;
+          display: inline-block;
+          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
+          animation: ggm-pulse 1.6s infinite;
+        }
+        @keyframes ggm-pulse {
+          0% {
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+          }
+          70% {
+            box-shadow: 0 0 0 7px rgba(34, 197, 94, 0);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+          }
+        }
+        .ggm-card {
+          transition: transform 0.15s ease, border-color 0.15s ease,
+            box-shadow 0.15s ease;
+        }
+        .ggm-card:hover {
+          transform: translateY(-2px);
+          border-color: rgba(34, 197, 94, 0.4) !important;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        }
+        @media (max-width: 640px) {
+          .ggm-team-name {
+            font-size: 12px !important;
+          }
+          .ggm-team-logo {
+            width: 26px !important;
+            height: 26px !important;
+          }
+          .ggm-score {
+            font-size: 18px !important;
+          }
+        }
+      `}</style>
     </main>
   );
 }
@@ -284,59 +362,83 @@ function MatchSection({
   emptyText: string;
 }) {
   return (
-    <section style={{ marginBottom: "35px" }}>
+    <section style={{ marginBottom: "38px" }}>
       <div
         style={{
-          marginBottom: "14px",
+          marginBottom: "16px",
           display: "flex",
           alignItems: "center",
-          gap: "10px",
+          gap: "12px",
+          flexWrap: "wrap",
         }}
       >
-        {type === "live" && (
-          <span
-            style={{
-              width: "10px",
-              height: "10px",
-              background: "#ef4444",
-              borderRadius: "50%",
-              display: "inline-block",
-            }}
-          />
-        )}
+        <div
+          style={{
+            width: "4px",
+            height: "34px",
+            borderRadius: "4px",
+            background:
+              type === "live"
+                ? "#ef4444"
+                : type === "upcoming"
+                  ? "#22c55e"
+                  : "#64748b",
+            flexShrink: 0,
+          }}
+        />
 
-        <div>
+        <div style={{ flex: 1 }}>
           <h2
             style={{
               margin: 0,
-              fontSize: "20px",
+              fontSize: "18px",
               fontWeight: 800,
+              letterSpacing: "0.02em",
+              color: "#f1f5f9",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
             }}
           >
+            {type === "live" && <span className="ggm-live-dot" />}
             {title}
           </h2>
 
           <div
             style={{
               marginTop: "3px",
-              color: "#6b7280",
+              color: "#64748b",
               fontSize: "12px",
             }}
           >
             {subtitle}
           </div>
         </div>
+
+        <div
+          style={{
+            background: "#0f1626",
+            border: "1px solid #1e293b",
+            color: "#94a3b8",
+            fontSize: "11px",
+            fontWeight: 700,
+            padding: "4px 12px",
+            borderRadius: "20px",
+          }}
+        >
+          {matches.length} {matches.length === 1 ? "match" : "matches"}
+        </div>
       </div>
 
       {matches.length === 0 ? (
         <div
           style={{
-            background: "white",
-            borderRadius: "12px",
-            padding: "22px",
-            color: "#6b7280",
-            fontSize: "14px",
-            border: "1px solid #e5e7eb",
+            background: "#0f1626",
+            borderRadius: "14px",
+            padding: "24px",
+            color: "#64748b",
+            fontSize: "13px",
+            border: "1px solid #1e293b",
           }}
         >
           {emptyText}
@@ -344,17 +446,13 @@ function MatchSection({
       ) : (
         <div
           style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "10px",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+            gap: "12px",
           }}
         >
           {matches.map((match) => (
-            <MatchCard
-              key={match.fixture.id}
-              match={match}
-              type={type}
-            />
+            <MatchCard key={match.fixture.id} match={match} type={type} />
           ))}
         </div>
       )}
@@ -379,24 +477,25 @@ function MatchCard({
         : match.fixture.status.short;
 
   return (
-    <a
+    
       href={`/matches/${match.fixture.id}`}
+      className="ggm-card"
       style={{
         display: "block",
-        background: "white",
-        color: "#111827",
+        background: "#0f1626",
+        color: "#e5e7eb",
         textDecoration: "none",
-        borderRadius: "12px",
-        border: "1px solid #e5e7eb",
+        borderRadius: "14px",
+        border: "1px solid #1e293b",
         overflow: "hidden",
       }}
     >
       {/* LEAGUE */}
       <div
         style={{
-          background: "#f9fafb",
-          padding: "10px 15px",
-          borderBottom: "1px solid #e5e7eb",
+          background: "rgba(255,255,255,0.02)",
+          padding: "9px 14px",
+          borderBottom: "1px solid #1e293b",
           display: "flex",
           alignItems: "center",
           gap: "8px",
@@ -406,17 +505,21 @@ function MatchCard({
           <img
             src={match.league.logo}
             alt=""
-            width="22"
-            height="22"
+            width="18"
+            height="18"
             style={{ objectFit: "contain" }}
           />
         )}
 
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div
             style={{
-              fontSize: "12px",
-              fontWeight: 800,
+              fontSize: "11px",
+              fontWeight: 700,
+              color: "#cbd5e1",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
           >
             {match.league.name}
@@ -425,7 +528,7 @@ function MatchCard({
           <div
             style={{
               fontSize: "10px",
-              color: "#6b7280",
+              color: "#64748b",
             }}
           >
             {match.league.country}
@@ -436,14 +539,27 @@ function MatchCard({
           <span
             style={{
               marginLeft: "auto",
-              background: "#fee2e2",
-              color: "#dc2626",
-              padding: "4px 8px",
+              background: "rgba(239, 68, 68, 0.15)",
+              color: "#f87171",
+              padding: "3px 9px",
               borderRadius: "20px",
               fontSize: "10px",
               fontWeight: 800,
+              letterSpacing: "0.04em",
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              flexShrink: 0,
             }}
           >
+            <span
+              style={{
+                width: "5px",
+                height: "5px",
+                borderRadius: "50%",
+                background: "#ef4444",
+              }}
+            />
             LIVE
           </span>
         )}
@@ -453,10 +569,10 @@ function MatchCard({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 80px 1fr",
+          gridTemplateColumns: "1fr 74px 1fr",
           alignItems: "center",
-          padding: "17px 15px",
-          gap: "10px",
+          padding: "16px 14px",
+          gap: "8px",
         }}
       >
         <div
@@ -464,46 +580,61 @@ function MatchCard({
             display: "flex",
             alignItems: "center",
             justifyContent: "flex-end",
-            gap: "9px",
+            gap: "8px",
             textAlign: "right",
+            minWidth: 0,
           }}
         >
-          <strong style={{ fontSize: "14px" }}>
+          <strong
+            className="ggm-team-name"
+            style={{
+              fontSize: "13px",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
             {match.teams.home.name}
           </strong>
 
           <img
             src={match.teams.home.logo}
             alt=""
-            width="34"
-            height="34"
-            style={{ objectFit: "contain" }}
+            width="30"
+            height="30"
+            className="ggm-team-logo"
+            style={{ objectFit: "contain", flexShrink: 0 }}
           />
         </div>
 
         <div style={{ textAlign: "center" }}>
           <div
+            className="ggm-score"
             style={{
-              fontSize: "21px",
+              fontSize: "20px",
               fontWeight: 900,
+              color:
+                type === "upcoming" ? "#64748b" : "#f8fafc",
+              letterSpacing: "-0.02em",
             }}
           >
             {type === "upcoming"
               ? "vs"
-              : `${match.goals.home ?? 0} - ${
-                  match.goals.away ?? 0
-                }`}
+              : `${match.goals.home ?? 0} - ${match.goals.away ?? 0}`}
           </div>
 
           <div
             style={{
               marginTop: "4px",
-              fontSize: "11px",
-              fontWeight: 700,
+              fontSize: "10px",
+              fontWeight: 800,
+              letterSpacing: "0.03em",
               color:
                 type === "live"
-                  ? "#dc2626"
-                  : "#6b7280",
+                  ? "#ef4444"
+                  : type === "finished"
+                    ? "#64748b"
+                    : "#22c55e",
             }}
           >
             {statusText}
@@ -514,18 +645,28 @@ function MatchCard({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "9px",
+            gap: "8px",
+            minWidth: 0,
           }}
         >
           <img
             src={match.teams.away.logo}
             alt=""
-            width="34"
-            height="34"
-            style={{ objectFit: "contain" }}
+            width="30"
+            height="30"
+            className="ggm-team-logo"
+            style={{ objectFit: "contain", flexShrink: 0 }}
           />
 
-          <strong style={{ fontSize: "14px" }}>
+          <strong
+            className="ggm-team-name"
+            style={{
+              fontSize: "13px",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
             {match.teams.away.name}
           </strong>
         </div>

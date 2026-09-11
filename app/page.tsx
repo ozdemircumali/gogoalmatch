@@ -49,7 +49,6 @@ export default function Home() {
   );
   const [favorites, setFavorites] = useState<number[]>([]);
 
-  // LocalStorage'dan Favorileri Yükle
   useEffect(() => {
     const saved = localStorage.getItem("ggm_favorites");
     if (saved) {
@@ -61,7 +60,6 @@ export default function Home() {
     }
   }, []);
 
-  // Maçları API'den Çek (Tarih parametresi ile)
   async function loadMatches() {
     try {
       const response = await fetch(`/api/fixtures?date=${selectedDate}`, {
@@ -90,7 +88,6 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [selectedDate]);
 
-  // Favori Ekle / Çıkar
   const toggleFavorite = (e: React.MouseEvent, id: number) => {
     e.preventDefault();
     e.stopPropagation();
@@ -104,7 +101,6 @@ export default function Home() {
     localStorage.setItem("ggm_favorites", JSON.stringify(updated));
   };
 
-  // Tarih Şeridi Butonları
   const generateDateTabs = () => {
     const dates = [];
     for (let i = -2; i <= 2; i++) {
@@ -124,20 +120,17 @@ export default function Home() {
     return dates;
   };
 
-  // Filtreleme Mantığı
   const filteredMatches = matches.filter((match) => {
     const isLive = LIVE_STATUSES.includes(match.fixture.status.short);
     const isFinished = FINISHED_STATUSES.includes(match.fixture.status.short);
     const isUpcoming = !isLive && !isFinished;
     const isFav = favorites.includes(match.fixture.id);
 
-    // Tab Filtresi
     if (activeTab === "LIVE" && !isLive) return false;
     if (activeTab === "UPCOMING" && !isUpcoming) return false;
     if (activeTab === "FINISHED" && !isFinished) return false;
     if (activeTab === "FAV" && !isFav) return false;
 
-    // Arama Filtresi
     if (searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase();
       const home = match.teams.home.name.toLowerCase();
@@ -172,7 +165,6 @@ export default function Home() {
         fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
       }}
     >
-      {/* Header */}
       <header
         style={{
           position: "sticky",
@@ -189,7 +181,7 @@ export default function Home() {
             margin: "0 auto",
             padding: "12px 20px",
             display: "flex",
-            justify-content: "space-between",
+            justifyContent: "space-between",
             alignItems: "center",
             gap: "16px",
           }}
@@ -203,7 +195,7 @@ export default function Home() {
                 background: "linear-gradient(135deg, #22c55e, #16a34a)",
                 display: "flex",
                 alignItems: "center",
-                justify-content: "center",
+                justifyContent: "center",
                 fontWeight: 900,
                 fontSize: "18px",
                 color: "#04170c",
@@ -226,7 +218,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Arama & Filtreleme Barı */}
         <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 20px 12px" }}>
           <input
             type="text"
@@ -246,7 +237,6 @@ export default function Home() {
             }}
           />
 
-          {/* Tab Filtreleri */}
           <div style={{ display: "flex", gap: "6px", marginTop: "10px", overflowX: "auto", paddingBottom: "2px" }}>
             <button
               className={`ggm-filter-btn ${activeTab === "ALL" ? "active" : ""}`}
@@ -280,7 +270,6 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Tarih Şeridi */}
           <div style={{ display: "flex", gap: "6px", marginTop: "8px", overflowX: "auto" }}>
             {generateDateTabs().map((item) => (
               <button
@@ -295,7 +284,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Maç Listesi Alanı */}
       <section style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px 20px 60px" }}>
         {loading ? (
           <div
@@ -579,7 +567,6 @@ function MatchRow({
           minHeight: "48px",
         }}
       >
-        {/* Favori Yıldızı */}
         <span
           className={`ggm-fav-star ${isFav ? "active" : ""}`}
           onClick={onToggleFav}
@@ -587,7 +574,6 @@ function MatchRow({
           ★
         </span>
 
-        {/* Ev Sahibi */}
         <div
           style={{
             display: "flex",
@@ -618,7 +604,6 @@ function MatchRow({
           />
         </div>
 
-        {/* Skor / Saat */}
         <div style={{ textAlign: "center" }}>
           {!isLive && !isFinished ? (
             <div className="ggm-score" style={{ fontSize: "13px", fontWeight: 800, color: "#22c55e" }}>
@@ -643,7 +628,6 @@ function MatchRow({
           )}
         </div>
 
-        {/* Deplasman */}
         <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
           <img
             src={match.teams.away.logo}

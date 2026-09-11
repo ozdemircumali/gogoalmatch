@@ -94,7 +94,6 @@ export default function Home() {
       }}
     >
       <header
-        className="ggm-header"
         style={{
           position: "sticky",
           top: 0,
@@ -164,7 +163,6 @@ export default function Home() {
           </div>
 
           <nav
-            className="ggm-nav"
             style={{
               display: "flex",
               gap: "6px",
@@ -327,6 +325,14 @@ export default function Home() {
           box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
         }
 
+        .ggm-league-header {
+          transition: background 0.15s ease;
+        }
+
+        .ggm-league-header:hover {
+          background: rgba(34, 197, 94, 0.06) !important;
+        }
+
         @media (max-width: 640px) {
           .ggm-team-name {
             font-size: 12px !important;
@@ -359,11 +365,28 @@ function MatchSection({
   type: "live" | "upcoming" | "finished";
   emptyText: string;
 }) {
+  const groupedMatches = matches.reduce<Record<string, Match[]>>(
+    (groups, match) => {
+      const leagueKey = `${match.league.country}||${match.league.name}`;
+
+      if (!groups[leagueKey]) {
+        groups[leagueKey] = [];
+      }
+
+      groups[leagueKey].push(match);
+
+      return groups;
+    },
+    {}
+  );
+
+  const leagues = Object.entries(groupedMatches);
+
   return (
-    <section style={{ marginBottom: "38px" }}>
+    <section style={{ marginBottom: "42px" }}>
       <div
         style={{
-          marginBottom: "16px",
+          marginBottom: "18px",
           display: "flex",
           alignItems: "center",
           gap: "12px",
@@ -373,7 +396,7 @@ function MatchSection({
         <div
           style={{
             width: "4px",
-            height: "34px",
+            height: "36px",
             borderRadius: "4px",
             background:
               type === "live"
@@ -442,16 +465,93 @@ function MatchSection({
           {emptyText}
         </div>
       ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-            gap: "12px",
-          }}
-        >
-          {matches.map((match) => (
-            <MatchCard key={match.fixture.id} match={match} type={type} />
-          ))}
+        <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+          {leagues.map(([leagueKey, leagueMatches]) => {
+            const firstMatch = leagueMatches[0];
+
+            return (
+              <div key={leagueKey}>
+                <div
+                  className="ggm-league-header"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    background: "#0b1220",
+                    border: "1px solid #1e293b",
+                    borderBottom: "none",
+                    borderRadius: "12px 12px 0 0",
+                    padding: "10px 14px",
+                  }}
+                >
+                  {firstMatch.league.logo && (
+                    <img
+                      src={firstMatch.league.logo}
+                      alt=""
+                      width="22"
+                      height="22"
+                      style={{ objectFit: "contain", flexShrink: 0 }}
+                    />
+                  )}
+
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div
+                      style={{
+                        color: "#f1f5f9",
+                        fontSize: "13px",
+                        fontWeight: 800,
+                      }}
+                    >
+                      {firstMatch.league.name}
+                    </div>
+
+                    <div
+                      style={{
+                        color: "#64748b",
+                        fontSize: "10px",
+                        marginTop: "2px",
+                      }}
+                    >
+                      {firstMatch.league.country}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      color: "#64748b",
+                      fontSize: "10px",
+                      fontWeight: 700,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {leagueMatches.length}{" "}
+                    {leagueMatches.length === 1 ? "match" : "matches"}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fill, minmax(320px, 1fr))",
+                    gap: "10px",
+                    padding: "10px",
+                    background: "rgba(15, 22, 38, 0.55)",
+                    border: "1px solid #1e293b",
+                    borderRadius: "0 0 12px 12px",
+                  }}
+                >
+                  {leagueMatches.map((match) => (
+                    <MatchCard
+                      key={match.fixture.id}
+                      match={match}
+                      type={type}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </section>
@@ -483,7 +583,7 @@ function MatchCard({
         background: "#0f1626",
         color: "#e5e7eb",
         textDecoration: "none",
-        borderRadius: "14px",
+        borderRadius: "12px",
         border: "1px solid #1e293b",
         overflow: "hidden",
       }}
@@ -491,62 +591,37 @@ function MatchCard({
       <div
         style={{
           background: "rgba(255,255,255,0.02)",
-          padding: "9px 14px",
+          padding: "8px 12px",
           borderBottom: "1px solid #1e293b",
           display: "flex",
           alignItems: "center",
           gap: "8px",
         }}
       >
-        {match.league.logo && (
-          <img
-            src={match.league.logo}
-            alt=""
-            width="18"
-            height="18"
-            style={{ objectFit: "contain" }}
-          />
-        )}
-
-        <div style={{ minWidth: 0 }}>
-          <div
-            style={{
-              fontSize: "11px",
-              fontWeight: 700,
-              color: "#cbd5e1",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {match.league.name}
-          </div>
-
-          <div
-            style={{
-              fontSize: "10px",
-              color: "#64748b",
-            }}
-          >
-            {match.league.country}
-          </div>
+        <div
+          style={{
+            fontSize: "10px",
+            color: "#64748b",
+            fontWeight: 600,
+            flex: 1,
+          }}
+        >
+          Match Center
         </div>
 
         {type === "live" && (
           <span
             style={{
-              marginLeft: "auto",
               background: "rgba(239, 68, 68, 0.15)",
               color: "#f87171",
-              padding: "3px 9px",
+              padding: "3px 8px",
               borderRadius: "20px",
-              fontSize: "10px",
+              fontSize: "9px",
               fontWeight: 800,
               letterSpacing: "0.04em",
               display: "flex",
               alignItems: "center",
               gap: "5px",
-              flexShrink: 0,
             }}
           >
             <span
@@ -567,7 +642,7 @@ function MatchCard({
           display: "grid",
           gridTemplateColumns: "1fr 74px 1fr",
           alignItems: "center",
-          padding: "16px 14px",
+          padding: "14px 12px",
           gap: "8px",
         }}
       >

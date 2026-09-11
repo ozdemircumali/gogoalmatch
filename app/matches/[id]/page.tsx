@@ -1,115 +1,102 @@
-"use client";
+import React from 'react';
 
-import { useEffect, useState } from "react";
+interface MatchPageProps {
+  params: {
+    id: string;
+  };
+}
 
-export default function MatchPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+// Doğrudan API-Football'dan maç detayını çeken fonksiyon
+async function getMatchDataDirect(id: string) {
+  const apiKey = process.env.API_FOOTBALL_KEY;
 
-  useEffect(() => {
-    async function loadMatch() {
-      try {
-        const [fixtureResponse, detailsResponse] = await Promise.all([
-          fetch(`/api/fixtures/${params.id}`, { cache: "no-store" }),
-          fetch(`/api/fixture-details/${params.id}`, { cache: "no-store" }),
-        ]);
-
-        const fixtureData = await fixtureResponse.json();
-        const detailsData = await detailsResponse.json();
-
-        setData({
-          fixture: fixtureData.response?.[0] || null,
-          events: detailsData.events || [],
-          statistics: detailsData.statistics || [],
-          lineups: detailsData.lineups || [],
-        });
-      } catch (error) {
-        console.error("Failed to load match:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadMatch();
-  }, [params.id]);
-
-  if (loading) {
-    return <main style={{ padding: 20 }}>Loading match...</main>;
+  if (!apiKey) {
+    console.error('API_FOOTBALL_KEY Vercel üzerinde tanımlı değil!');
+    return null;
   }
 
-  const match = data?.fixture;
+  try {
+    const res = await fetch(`https://v3.football.api-sports.io/fixtures?id=${id}`, {
+      method: 'GET',
+      headers: {
+        'x-rapidapi-host': 'v3.football.api-sports.io',
+        'x-rapidapi-key': apiKey,
+      },
+      next: { revalidate: 30 }, // 30 saniyede bir önbellek tazeleme
+    });
+
+    if (!res.ok) {
+      console.error(`API-Football HTTP Hatası: ${res.status}`);
+      return null;
+    }
+
+    const data = await res.json();
+
+    // API-Football veriyi "response" dizisinde döner
+    if (!data.response || data.response.length === 0) {
+      console.warn(`ID: ${id} için maç bulunamadı.`);
+      return null;
+    }
+
+    return data.response[0];
+  } catch (error) {
+    console.error('Maç verisi çekilirken hata oluştu:', error);
+    return null;
+  }
+}
+
+export default async function MatchDetailPage({ params }: MatchPageProps) {
+  const matchId = params.id;
+  const match = await getMatchDataDirect(matchId);
 
   if (!match) {
     return (
-      <main style={{ padding: 20 }}>
-        <h2>Match not found</h2>
-      </main>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-center p-4">
+        <h1 className="text-2xl font-bold text-red-500">Match Not Found</h1>
+        <p className="text-gray-400 max-w-md">
+          Maç bilgisi alınamadı. (Maç ID: <code className="text-amber-400">{matchId}</code>)
+        </p>
+        <span className="text-xs text-gray-500">
+          Lütfen Vercel panelinde `API_FOOTBALL_KEY` ortam değişkeninin ekli olduğunu ve maç ID'sinin geçerliliğini kontrol edin.
+        </span>
+      </div>
     );
   }
 
+  const { fixture, teams, goals, league } = match;
+
   return (
-    <main style={{ padding: 20 }}>
-      <h1>
-        {match.teams.home.name} {match.goals.home ?? 0} -{" "}
-        {match.goals.away ?? 0} {match.teams.away.name}
-      </h1>
+    <main className="max-w-4xl mx-auto p-4 space-y-6">
+      {/* Lig & Stadyum */}
+      <div className="text-center border-b border-gray-800 pb-4">
+        <h2 className="text-lg font-semibold text-white">{league?.name}</h2>
+        <p className="text-sm text-gray-400">{fixture.venue?.name} - {fixture.status.long}</p>
+      </div>
 
-      <p>
-        Status: {match.fixture.status?.long}
-      </p>
+      {/* Skor Skorbordu */}
+      <div className="flex items-center justify-around bg-slate-900 text-white p-6 rounded-xl shadow-lg border border-slate-800">
+        {/* Ev Sahibi */}
+        <div className="flex flex-col items-center gap-2 w-1/3 text-center">
+          <img src={teams.home.logo} alt={teams.home.name} className="w-16 h-16 object-contain" />
+          <span className="font-bold text-base md:text-lg">{teams.home.name}</span>
+        </div>
 
-      <h2>Match Events</h2>
-      {data.events.length === 0 ? (
-        <p>No events available.</p>
-      ) : (
-        data.events.map((event: any, index: number) => (
-          <div key={index} style={{ marginBottom: 8 }}>
-            {event.time?.elapsed}' —{" "}
-            {event.team?.name} — {event.type} — {event.detail}
+        {/* Skor Bilgisi */}
+        <div className="flex flex-col items-center w-1/3">
+          <div className="text-3xl md:text-5xl font-extrabold tracking-wider">
+            {goals.home ?? 0} - {goals.away ?? 0}
           </div>
-        ))
-      )}
+          <span className="text-xs text-green-400 font-mono mt-2 bg-green-950/50 px-2 py-1 rounded border border-green-800/50">
+            {fixture.status.elapsed ? `${fixture.status.elapsed}'` : fixture.status.short}
+          </span>
+        </div>
 
-      <h2>Statistics</h2>
-      {data.statistics.length === 0 ? (
-        <p>No statistics available.</p>
-      ) : (
-        data.statistics.map((team: any, index: number) => (
-          <div key={index} style={{ marginBottom: 20 }}>
-            <h3>{team.team?.name}</h3>
-            {team.statistics?.map((stat: any, i: number) => (
-              <div key={i}>
-                {stat.type}: {stat.value ?? "-"}
-              </div>
-            ))}
-          </div>
-        ))
-      )}
-
-      <h2>Lineups</h2>
-      {data.lineups.length === 0 ? (
-        <p>No lineups available.</p>
-      ) : (
-        data.lineups.map((team: any, index: number) => (
-          <div key={index} style={{ marginBottom: 20 }}>
-            <h3>{team.team?.name}</h3>
-            {team.startXI?.map((player: any, i: number) => (
-              <div key={i}>
-                {player.player?.name}
-              </div>
-            ))}
-          </div>
-        ))
-      )}
-
-      <h2>Match Information</h2>
-      <p>League: {match.league?.name}</p>
-      <p>Venue: {match.fixture?.venue?.name}</p>
-      <p>Referee: {match.fixture?.referee || "-"}</p>
+        {/* Deplasman */}
+        <div className="flex flex-col items-center gap-2 w-1/3 text-center">
+          <img src={teams.away.logo} alt={teams.away.name} className="w-16 h-16 object-contain" />
+          <span className="font-bold text-base md:text-lg">{teams.away.name}</span>
+        </div>
+      </div>
     </main>
   );
 }

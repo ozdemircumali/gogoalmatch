@@ -107,12 +107,12 @@ export default function Home() {
       const iso = d.toISOString().split("T")[0];
       const label =
         i === 0
-          ? "Today"
+          ? "Bugün"
           : i === -1
-          ? "Yesterday"
+          ? "Dün"
           : i === 1
-          ? "Tomorrow"
-          : d.toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" });
+          ? "Yarın"
+          : d.toLocaleDateString("tr-TR", { weekday: "short", month: "numeric", day: "numeric" });
       dates.push({ iso, label });
     }
     return dates;
@@ -154,92 +154,58 @@ export default function Home() {
   const leagueGroups = groupMatchesByLeague(filteredMatches);
 
   return (
-    <main className="min-h-screen bg-[#070b14] text-slate-100 font-sans selection:bg-emerald-500 selection:text-black">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#080c16]/90 backdrop-blur-md border-b border-emerald-500/10">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center gap-4">
+    <main className="min-h-screen bg-[#0d0f12] text-slate-100 font-sans selection:bg-orange-500 selection:text-white">
+      {/* Üst Header / Marka Alanı */}
+      <header className="sticky top-0 z-50 bg-[#12161c]/95 backdrop-blur-md border-b border-orange-500/20 shadow-lg">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center font-black text-lg text-slate-950 shadow-lg shadow-emerald-500/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center font-black text-xl text-white shadow-md shadow-orange-500/30">
               G
             </div>
             <div>
-              <h1 className="text-xl font-extrabold tracking-tight text-white">
-                GoGoal<span className="text-emerald-400">Match</span>
+              <h1 className="text-xl font-black tracking-wider text-white uppercase">
+                GoGoal<span className="text-orange-500">Match</span>
               </h1>
+              <p className="text-[10px] font-semibold text-slate-400 tracking-widest uppercase">Canlı Futbol Skorları</p>
             </div>
           </div>
 
           <div className="flex gap-2">
-            <HeroStat label="Live" value={loading ? "–" : String(liveCount)} accent="text-rose-500" />
-            <HeroStat label="Total" value={loading ? "–" : String(matches.length)} accent="text-emerald-400" />
-            <HeroStat label="Leagues" value={loading ? "–" : String(totalLeagues)} accent="text-sky-400" />
+            <HeroStat label="Canlı" value={loading ? "–" : String(liveCount)} accent="text-orange-500 bg-orange-500/10 border-orange-500/30" isLivePulse={liveCount > 0} />
+            <HeroStat label="Toplam" value={loading ? "–" : String(matches.length)} accent="text-slate-200 bg-slate-800/50 border-slate-700/50" />
+            <HeroStat label="Lig" value={loading ? "–" : String(totalLeagues)} accent="text-slate-200 bg-slate-800/50 border-slate-700/50" />
           </div>
         </div>
 
-        {/* Arama & Filtreleme Barı */}
-        <div className="max-w-6xl mx-auto px-4 pb-3 space-y-2.5">
+        {/* Arama & Filtreleme Çubuğu */}
+        <div className="max-w-5xl mx-auto px-4 pb-3 space-y-2.5">
           <div className="relative">
             <input
               type="text"
-              placeholder="Search team or league..."
+              placeholder="Takım veya lig ara (örn: Real Madrid, Süper Lig)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#0c1220] border border-slate-800 focus:border-emerald-500/50 rounded-xl px-4 py-2 text-sm text-white placeholder-slate-500 outline-none transition-all shadow-inner"
+              className="w-full bg-[#181d26] border border-slate-800 focus:border-orange-500 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 outline-none transition-all shadow-inner"
             />
           </div>
 
-          {/* Tab Filtreleri */}
+          {/* Kategori Tabları */}
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-            <button
-              onClick={() => setActiveTab("ALL")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                activeTab === "ALL"
-                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 shadow-sm"
-                  : "bg-[#0c1220] text-slate-400 border border-slate-800 hover:border-slate-700"
-              }`}
-            >
-              ALL ({matches.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("LIVE")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all whitespace-nowrap flex items-center gap-1.5 ${
-                activeTab === "LIVE"
-                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 shadow-sm"
-                  : "bg-[#0c1220] text-slate-400 border border-slate-800 hover:border-slate-700"
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shadow-[0_0_8px_#ef4444]" /> LIVE ({liveCount})
-            </button>
-            <button
-              onClick={() => setActiveTab("UPCOMING")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all whitespace-nowrap ${
-                activeTab === "UPCOMING"
-                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 shadow-sm"
-                  : "bg-[#0c1220] text-slate-400 border border-slate-800 hover:border-slate-700"
-              }`}
-            >
-              UPCOMING
-            </button>
-            <button
-              onClick={() => setActiveTab("FINISHED")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all whitespace-nowrap ${
-                activeTab === "FINISHED"
-                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 shadow-sm"
-                  : "bg-[#0c1220] text-slate-400 border border-slate-800 hover:border-slate-700"
-              }`}
-            >
-              FINISHED
-            </button>
-            <button
-              onClick={() => setActiveTab("FAV")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all whitespace-nowrap ${
-                activeTab === "FAV"
-                  ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 shadow-sm"
-                  : "bg-[#0c1220] text-slate-400 border border-slate-800 hover:border-slate-700"
-              }`}
-            >
-              ★ FAV ({favorites.length})
-            </button>
+            <TabButton active={activeTab === "ALL"} onClick={() => setActiveTab("ALL")}>
+              TÜMÜ ({matches.length})
+            </TabButton>
+            <TabButton active={activeTab === "LIVE"} onClick={() => setActiveTab("LIVE")}>
+              <span className="w-2 h-2 rounded-full bg-orange-500 animate-ping inline-block mr-1" /> CANLI ({liveCount})
+            </TabButton>
+            <TabButton active={activeTab === "UPCOMING"} onClick={() => setActiveTab("UPCOMING")}>
+              MAÇ SAATİ
+            </TabButton>
+            <TabButton active={activeTab === "FINISHED"} onClick={() => setActiveTab("FINISHED")}>
+              BİTEN
+            </TabButton>
+            <TabButton active={activeTab === "FAV"} onClick={() => setActiveTab("FAV")}>
+              ⭐ FAVORİLER ({favorites.length})
+            </TabButton>
           </div>
 
           {/* Tarih Şeridi */}
@@ -248,10 +214,10 @@ export default function Home() {
               <button
                 key={item.iso}
                 onClick={() => setSelectedDate(item.iso)}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold tracking-tight transition-all whitespace-nowrap ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold tracking-tight transition-all whitespace-nowrap ${
                   selectedDate === item.iso
-                    ? "bg-slate-800 text-emerald-400 border border-emerald-500/40 shadow-sm"
-                    : "bg-[#080c16] text-slate-500 border border-slate-800/60 hover:text-slate-300"
+                    ? "bg-orange-600 text-white shadow-md shadow-orange-600/30 border border-orange-500"
+                    : "bg-[#181d26] text-slate-400 border border-slate-800/60 hover:text-slate-200 hover:border-slate-700"
                 }`}
               >
                 {item.label}
@@ -261,15 +227,15 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Maç Listesi Alanı */}
-      <section className="max-w-6xl mx-auto px-4 py-6">
+      {/* Ana İçerik / Maç Listesi */}
+      <section className="max-w-5xl mx-auto px-4 py-6">
         {loading ? (
-          <div className="bg-[#0c1220] border border-slate-800/80 p-12 rounded-2xl text-center text-slate-400 text-sm shadow-xl">
-            Loading matches...
+          <div className="bg-[#12161c] border border-slate-800/80 p-16 rounded-2xl text-center text-slate-400 text-xs shadow-xl animate-pulse">
+            Maçlar yükleniyor, lütfen bekleyin...
           </div>
         ) : leagueGroups.length === 0 ? (
-          <div className="bg-[#0c1220] rounded-2xl p-8 text-slate-500 text-xs border border-slate-800/80 text-center">
-            No matches found for the selected filter.
+          <div className="bg-[#12161c] rounded-2xl p-12 text-slate-500 text-xs border border-slate-800/80 text-center shadow-lg">
+            Seçilen kriterlere uygun maç bulunamadı.
           </div>
         ) : (
           leagueGroups.map((group) => (
@@ -284,19 +250,37 @@ export default function Home() {
         )}
       </section>
 
-      <footer className="border-t border-slate-800/60 py-6 text-center text-slate-600 text-xs">
-        © {new Date().getFullYear()} GoGoalMatch — Live sports scores & standings.
+      <footer className="border-t border-slate-800/60 py-6 text-center text-slate-500 text-xs bg-[#12161c]/50">
+        © {new Date().getFullYear()} GoGoalMatch — Profesyonel Canlı Futbol Skorları.
       </footer>
     </main>
   );
 }
 
-function HeroStat({ label, value, accent }: { label: string; value: string; accent: string }) {
+function HeroStat({ label, value, accent, isLivePulse }: { label: string; value: string; accent: string; isLivePulse?: boolean }) {
   return (
-    <div className="bg-[#0c1220] border border-slate-800/80 rounded-xl px-3 py-1.5 text-center min-w-[56px] shadow-sm">
-      <div className={`text-base font-black leading-none ${accent}`}>{value}</div>
-      <div className="mt-1 text-[9px] font-bold tracking-wider text-slate-500 uppercase">{label}</div>
+    <div className={`border rounded-xl px-3 py-1.5 text-center min-w-[56px] shadow-sm ${accent}`}>
+      <div className="text-sm font-black leading-none flex items-center justify-center gap-1">
+        {isLivePulse && <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-ping" />}
+        {value}
+      </div>
+      <div className="mt-1 text-[9px] font-extrabold tracking-wider uppercase opacity-80">{label}</div>
     </div>
+  );
+}
+
+function TabButton({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold tracking-wider transition-all whitespace-nowrap flex items-center ${
+        active
+          ? "bg-orange-500/20 text-orange-400 border border-orange-500/50 shadow-sm"
+          : "bg-[#181d26] text-slate-400 border border-slate-800 hover:border-slate-700 hover:text-white"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -337,17 +321,17 @@ function LeagueGroup({
   onToggleFavorite: (e: React.MouseEvent, id: number) => void;
 }) {
   return (
-    <div className="bg-[#0c1220] border border-slate-800/80 rounded-2xl overflow-hidden mb-4 shadow-xl">
-      <div className="bg-white/[0.02] px-3.5 py-2.5 border-b border-slate-800/80 flex items-center gap-2.5">
+    <div className="bg-[#12161c] border border-slate-800/80 rounded-2xl overflow-hidden mb-4 shadow-xl">
+      <div className="bg-[#181d26] px-4 py-2.5 border-b border-slate-800/80 flex items-center gap-3">
         {league.logo && (
           <img src={league.logo} alt="" className="w-5 h-5 object-contain" />
         )}
         <div className="min-w-0 flex-1">
-          <div className="text-xs font-extrabold text-slate-200 truncate">{league.name}</div>
-          <div className="text-[10px] text-slate-500 truncate">{league.country}</div>
+          <div className="text-xs font-black text-white truncate">{league.name}</div>
+          <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{league.country}</div>
         </div>
-        <div className="text-[10px] font-bold text-slate-500 bg-slate-800/50 px-2 py-0.5 rounded-full">
-          {matches.length}
+        <div className="text-[10px] font-black text-orange-400 bg-orange-500/10 border border-orange-500/20 px-2 py-0.5 rounded-md">
+          {matches.length} Maç
         </div>
       </div>
 
@@ -389,27 +373,27 @@ function MatchRow({
       ? `${match.fixture.status.elapsed}'`
       : match.fixture.status.short
     : isFinished
-    ? "FT"
+    ? "MS"
     : formatKickoffTime(match.fixture.date);
 
   return (
     <a
       href={`/matches/${match.fixture.id}`}
-      className="grid grid-cols-[32px_1fr_80px_1fr] items-center px-3.5 py-2.5 gap-2 hover:bg-white/[0.03] transition-colors border-t border-slate-800/50 first:border-0 group"
+      className="grid grid-cols-[36px_1fr_84px_1fr] items-center px-3.5 py-3 gap-2 hover:bg-white/[0.02] transition-colors border-t border-slate-800/40 first:border-0 group"
     >
       {/* Favori Yıldızı */}
       <span
         onClick={onToggleFav}
-        className={`text-base cursor-pointer transition-colors text-center ${
-          isFav ? "text-amber-400" : "text-slate-700 hover:text-slate-500"
+        className={`text-sm cursor-pointer transition-colors text-center ${
+          isFav ? "text-amber-400 scale-110" : "text-slate-700 hover:text-slate-400"
         }`}
       >
         ★
       </span>
 
-      {/* Ev Sahibi */}
-      <div className="flex items-center justify-end gap-2 min-w-0">
-        <span className="text-xs font-semibold text-slate-200 truncate group-hover:text-white transition-colors">
+      {/* Ev Sahibi Takım */}
+      <div className="flex items-center justify-end gap-2.5 min-w-0">
+        <span className="text-xs font-bold text-slate-200 truncate group-hover:text-white transition-colors text-right">
           {match.teams.home.name}
         </span>
         <img
@@ -419,20 +403,20 @@ function MatchRow({
         />
       </div>
 
-      {/* Skor / Saat */}
+      {/* Skor / Saat Alanı */}
       <div className="text-center">
         {!isLive && !isFinished ? (
-          <div className="text-xs font-bold text-emerald-400 tracking-wider">
+          <div className="text-xs font-black text-orange-400 tracking-wider bg-orange-500/10 border border-orange-500/20 rounded py-0.5">
             {statusText}
           </div>
         ) : (
-          <div>
-            <div className="text-sm font-black text-slate-100 tracking-tight">
+          <div className="bg-[#181d26] border border-slate-800 rounded-lg py-1 px-2">
+            <div className="text-sm font-black text-white tracking-widest">
               {`${match.goals.home ?? 0} - ${match.goals.away ?? 0}`}
             </div>
             <div
-              className={`text-[9px] font-extrabold uppercase mt-0.5 ${
-                isLive ? "text-rose-500 animate-pulse" : "text-slate-500"
+              className={`text-[9px] font-black uppercase tracking-wider mt-0.5 ${
+                isLive ? "text-orange-500 animate-pulse" : "text-slate-400"
               }`}
             >
               {statusText}
@@ -441,14 +425,14 @@ function MatchRow({
         )}
       </div>
 
-      {/* Deplasman */}
-      <div className="flex items-center gap-2 min-w-0">
+      {/* Deplasman Takımı */}
+      <div className="flex items-center gap-2.5 min-w-0">
         <img
           src={match.teams.away.logo}
           alt=""
           className="w-5 h-5 object-contain flex-shrink-0"
         />
-        <span className="text-xs font-semibold text-slate-200 truncate group-hover:text-white transition-colors">
+        <span className="text-xs font-bold text-slate-200 truncate group-hover:text-white transition-colors">
           {match.teams.away.name}
         </span>
       </div>

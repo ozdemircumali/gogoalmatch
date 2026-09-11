@@ -34,7 +34,7 @@ type Match = {
   };
 };
 
-type SectionType = "live" | "upcoming" | "finished";
+type FilterTab = "ALL" | "LIVE" | "UPCOMING" | "FINISHED" | "FAV";
 
 const LIVE_STATUSES = ["1H", "2H", "HT", "ET", "BT", "P"];
 const FINISHED_STATUSES = ["FT", "AET", "PEN"];
@@ -42,10 +42,29 @@ const FINISHED_STATUSES = ["FT", "AET", "PEN"];
 export default function Home() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<FilterTab>("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [favorites, setFavorites] = useState<number[]>([]);
 
+  // LocalStorage'dan Favorileri Yükle
+  useEffect(() => {
+    const saved = localStorage.getItem("ggm_favorites");
+    if (saved) {
+      try {
+        setFavorites(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to load favorites", e);
+      }
+    }
+  }, []);
+
+  // Maçları API'den Çek (Tarih parametresi ile)
   async function loadMatches() {
     try {
-      const response = await fetch("/api/fixtures", {
+      const response = await fetch(`/api/fixtures?date=${selectedDate}`, {
         cache: "no-store",
       });
 
@@ -64,25 +83,75 @@ export default function Home() {
   }
 
   useEffect(() => {
+    setLoading(true);
     loadMatches();
 
     const interval = setInterval(loadMatches, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedDate]);
 
-  const liveMatches = matches.filter((match) =>
-    LIVE_STATUSES.includes(match.fixture.status.short)
-  );
+  // Favori Ekle / Çıkar
+  const toggleFavorite = (e: React.MouseEvent, id: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    let updated = [...favorites];
+    if (updated.includes(id)) {
+      updated = updated.filter((favId) => favId !== id);
+    } else {
+      updated.push(id);
+    }
+    setFavorites(updated);
+    localStorage.setItem("ggm_favorites", JSON.stringify(updated));
+  };
 
-  const finishedMatches = matches.filter((match) =>
-    FINISHED_STATUSES.includes(match.fixture.status.short)
-  );
+  // Tarih Şeridi Butonları
+  const generateDateTabs = () => {
+    const dates = [];
+    for (let i = -2; i <= 2; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      const iso = d.toISOString().split("T")[0];
+      const label =
+        i === 0
+          ? "Today"
+          : i === -1
+          ? "Yesterday"
+          : i === 1
+          ? "Tomorrow"
+          : d.toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" });
+      dates.push({ iso, label });
+    }
+    return dates;
+  };
 
-  const upcomingMatches = matches.filter(
-    (match) =>
-      !LIVE_STATUSES.includes(match.fixture.status.short) &&
-      !FINISHED_STATUSES.includes(match.fixture.status.short)
-  );
+  // Filtreleme Mantığı
+  const filteredMatches = matches.filter((match) => {
+    const isLive = LIVE_STATUSES.includes(match.fixture.status.short);
+    const isFinished = FINISHED_STATUSES.includes(match.fixture.status.short);
+    const isUpcoming = !isLive && !isFinished;
+    const isFav = favorites.includes(match.fixture.id);
+
+    // Tab Filtresi
+    if (activeTab === "LIVE" && !isLive) return false;
+    if (activeTab === "UPCOMING" && !isUpcoming) return false;
+    if (activeTab === "FINISHED" && !isFinished) return false;
+    if (activeTab === "FAV" && !isFav) return false;
+
+    // Arama Filtresi
+    if (searchQuery.trim() !== "") {
+      const query = searchQuery.toLowerCase();
+      const home = match.teams.home.name.toLowerCase();
+      const away = match.teams.away.name.toLowerCase();
+      const league = match.league.name.toLowerCase();
+      return home.includes(query) || away.includes(query) || league.includes(query);
+    }
+
+    return true;
+  });
+
+  const liveCount = matches.filter((m) =>
+    LIVE_STATUSES.includes(m.fixture.status.short)
+  ).length;
 
   const totalLeagues = new Set(
     matches.map((match) =>
@@ -92,23 +161,24 @@ export default function Home() {
     )
   ).size;
 
+  const leagueGroups = groupMatchesByLeague(filteredMatches);
+
   return (
     <main
       style={{
         minHeight: "100vh",
-        background:
-          "linear-gradient(180deg, #060a13 0%, #0a0f1c 40%, #0b1120 100%)",
+        background: "linear-gradient(180deg, #060a13 0%, #0a0f1c 40%, #0b1120 100%)",
         color: "#e5e7eb",
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
       }}
     >
+      {/* Header */}
       <header
         style={{
           position: "sticky",
           top: 0,
           zIndex: 50,
-          background: "rgba(8, 12, 22, 0.92)",
+          background: "rgba(8, 12, 22, 0.95)",
           backdropFilter: "blur(10px)",
           borderBottom: "1px solid rgba(34, 197, 94, 0.15)",
         }}
@@ -117,319 +187,234 @@ export default function Home() {
           style={{
             maxWidth: "1200px",
             margin: "0 auto",
-            padding: "16px 20px",
+            padding: "12px 20px",
             display: "flex",
-            justifyContent: "space-between",
+            justify-content: "space-between",
             alignItems: "center",
-            gap: "20px",
-            flexWrap: "wrap",
+            gap: "16px",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <div
               style={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "10px",
+                width: "34px",
+                height: "34px",
+                borderRadius: "8px",
                 background: "linear-gradient(135deg, #22c55e, #16a34a)",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
+                justify-content: "center",
                 fontWeight: 900,
                 fontSize: "18px",
                 color: "#04170c",
-                boxShadow: "0 0 18px rgba(34, 197, 94, 0.35)",
-                flexShrink: 0,
+                boxShadow: "0 0 14px rgba(34, 197, 94, 0.35)",
               }}
             >
               G
             </div>
             <div>
-              <div
-                style={{
-                  fontSize: "22px",
-                  fontWeight: 800,
-                  lineHeight: 1,
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                GoGoal
-                <span style={{ color: "#22c55e" }}>Match</span>
-              </div>
-              <div
-                style={{
-                  color: "#64748b",
-                  fontSize: "11px",
-                  marginTop: "4px",
-                  letterSpacing: "0.04em",
-                  textTransform: "uppercase",
-                }}
-              >
-                Live Football Scores
+              <div style={{ fontSize: "20px", fontWeight: 800, lineHeight: 1 }}>
+                GoGoal<span style={{ color: "#22c55e" }}>Match</span>
               </div>
             </div>
           </div>
 
-          <nav
+          <div style={{ display: "flex", gap: "8px" }}>
+            <HeroStat label="Live" value={loading ? "–" : String(liveCount)} accent="#ef4444" />
+            <HeroStat label="Total" value={loading ? "–" : String(matches.length)} accent="#22c55e" />
+            <HeroStat label="Leagues" value={loading ? "–" : String(totalLeagues)} accent="#38bdf8" />
+          </div>
+        </div>
+
+        {/* Arama & Filtreleme Barı */}
+        <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 20px 12px" }}>
+          <input
+            type="text"
+            placeholder="Search team or league..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             style={{
-              display: "flex",
-              gap: "6px",
-              flexWrap: "wrap",
-              alignItems: "center",
+              width: "100%",
+              background: "#0f1626",
+              border: "1px solid #1e293b",
+              borderRadius: "8px",
+              padding: "8px 14px",
+              color: "#fff",
+              fontSize: "13px",
+              outline: "none",
+              boxSizing: "border-box",
             }}
-          >
-            <a href="/" className="ggm-nav-link ggm-nav-link-active">
-              <span className="ggm-live-dot" />
-              LIVE
-            </a>
-            <a href="/matches" className="ggm-nav-link">
-              Matches
-            </a>
-            <a href="/results" className="ggm-nav-link">
-              Results
-            </a>
-            <a href="/standings" className="ggm-nav-link">
-              Standings
-            </a>
-            <a href="/stats" className="ggm-nav-link">
-              Stats
-            </a>
-          </nav>
+          />
+
+          {/* Tab Filtreleri */}
+          <div style={{ display: "flex", gap: "6px", marginTop: "10px", overflowX: "auto", paddingBottom: "2px" }}>
+            <button
+              className={`ggm-filter-btn ${activeTab === "ALL" ? "active" : ""}`}
+              onClick={() => setActiveTab("ALL")}
+            >
+              ALL ({matches.length})
+            </button>
+            <button
+              className={`ggm-filter-btn ${activeTab === "LIVE" ? "active" : ""}`}
+              onClick={() => setActiveTab("LIVE")}
+            >
+              <span className="ggm-live-dot" /> LIVE ({liveCount})
+            </button>
+            <button
+              className={`ggm-filter-btn ${activeTab === "UPCOMING" ? "active" : ""}`}
+              onClick={() => setActiveTab("UPCOMING")}
+            >
+              UPCOMING
+            </button>
+            <button
+              className={`ggm-filter-btn ${activeTab === "FINISHED" ? "active" : ""}`}
+              onClick={() => setActiveTab("FINISHED")}
+            >
+              FINISHED
+            </button>
+            <button
+              className={`ggm-filter-btn ${activeTab === "FAV" ? "active" : ""}`}
+              onClick={() => setActiveTab("FAV")}
+            >
+              ★ FAV ({favorites.length})
+            </button>
+          </div>
+
+          {/* Tarih Şeridi */}
+          <div style={{ display: "flex", gap: "6px", marginTop: "8px", overflowX: "auto" }}>
+            {generateDateTabs().map((item) => (
+              <button
+                key={item.iso}
+                className={`ggm-date-btn ${selectedDate === item.iso ? "active" : ""}`}
+                onClick={() => setSelectedDate(item.iso)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
-      <section
-        style={{
-          borderBottom: "1px solid #1e293b",
-          background:
-            "radial-gradient(circle at 20% 20%, rgba(34,197,94,0.10), transparent 45%), radial-gradient(circle at 80% 0%, rgba(34,197,94,0.06), transparent 40%)",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "1200px",
-            margin: "0 auto",
-            padding: "32px 20px",
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "20px",
-          }}
-        >
-          <div style={{ maxWidth: "560px" }}>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                background: "rgba(34, 197, 94, 0.12)",
-                color: "#22c55e",
-                fontSize: "11px",
-                fontWeight: 800,
-                letterSpacing: "0.04em",
-                padding: "5px 12px",
-                borderRadius: "20px",
-                marginBottom: "12px",
-              }}
-            >
-              <span className="ggm-live-dot" />
-              REAL-TIME UPDATES
-            </div>
-
-            <h1
-              style={{
-                margin: 0,
-                fontSize: "clamp(24px, 4vw, 34px)",
-                fontWeight: 900,
-                lineHeight: 1.15,
-                letterSpacing: "-0.02em",
-                color: "#f8fafc",
-              }}
-            >
-              Every score. Every league.
-              <br />
-              As it happens.
-            </h1>
-
-            <p
-              style={{
-                marginTop: "10px",
-                marginBottom: 0,
-                fontSize: "13px",
-                color: "#94a3b8",
-                lineHeight: 1.5,
-              }}
-            >
-              GoGoalMatch tracks live football scores, results and standings
-              across hundreds of leagues worldwide — updated automatically
-              every 30 seconds.
-            </p>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              gap: "10px",
-              flexWrap: "wrap",
-            }}
-          >
-            <HeroStat
-              label="Live now"
-              value={loading ? "–" : String(liveMatches.length)}
-              accent="#ef4444"
-            />
-            <HeroStat
-              label="Today"
-              value={loading ? "–" : String(matches.length)}
-              accent="#22c55e"
-            />
-            <HeroStat
-              label="Leagues"
-              value={loading ? "–" : String(totalLeagues)}
-              accent="#38bdf8"
-            />
-          </div>
-        </div>
-      </section>
-
-      <div
-        id="ad-slot-top"
-        style={{
-          maxWidth: "1200px",
-          margin: "20px auto 0",
-          padding: "0 20px",
-        }}
-      >
-        <div style={{ minHeight: "0px" }} />
-      </div>
-
-      <section
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          padding: "28px 20px 60px",
-        }}
-      >
+      {/* Maç Listesi Alanı */}
+      <section style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px 20px 60px" }}>
         {loading ? (
           <div
             style={{
               background: "#0f1626",
               border: "1px solid #1e293b",
-              padding: "60px 20px",
-              borderRadius: "16px",
+              padding: "40px 20px",
+              borderRadius: "14px",
               textAlign: "center",
               color: "#94a3b8",
               fontSize: "14px",
-              fontWeight: 600,
             }}
           >
             Loading matches...
           </div>
+        ) : leagueGroups.length === 0 ? (
+          <div
+            style={{
+              background: "#0f1626",
+              borderRadius: "14px",
+              padding: "30px",
+              color: "#64748b",
+              fontSize: "13px",
+              border: "1px solid #1e293b",
+              textAlign: "center",
+            }}
+          >
+            No matches found for the selected filter.
+          </div>
         ) : (
-          <>
-            <MatchSection
-              title="LIVE MATCHES"
-              subtitle="Matches currently being played"
-              matches={liveMatches}
-              type="live"
-              emptyText="There are no live matches right now."
+          leagueGroups.map((group) => (
+            <LeagueGroup
+              key={group.key}
+              league={group.league}
+              matches={group.matches}
+              favorites={favorites}
+              onToggleFavorite={toggleFavorite}
             />
-
-            <div id="ad-slot-mid" style={{ margin: "20px 0" }}>
-              <div style={{ minHeight: "0px" }} />
-            </div>
-
-            <MatchSection
-              title="TODAY'S MATCHES"
-              subtitle="Upcoming matches today"
-              matches={upcomingMatches}
-              type="upcoming"
-              emptyText="There are no upcoming matches."
-            />
-
-            <MatchSection
-              title="RESULTS"
-              subtitle="Finished matches today"
-              matches={finishedMatches}
-              type="finished"
-              emptyText="There are no finished matches yet."
-            />
-          </>
+          ))
         )}
       </section>
 
       <footer
         style={{
           borderTop: "1px solid #1e293b",
-          padding: "28px 20px",
+          padding: "24px 20px",
           textAlign: "center",
           color: "#475569",
           fontSize: "12px",
         }}
       >
-        © {new Date().getFullYear()} GoGoalMatch — All match data provided
-        for informational purposes.
+        © {new Date().getFullYear()} GoGoalMatch — Live sports scores & standings.
       </footer>
 
       <style jsx global>{`
-        .ggm-nav-link {
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
+        .ggm-filter-btn {
+          background: #0f1626;
+          border: 1px solid #1e293b;
           color: #94a3b8;
-          text-decoration: none;
-          font-size: 13px;
+          font-size: 11px;
           font-weight: 700;
-          letter-spacing: 0.02em;
-          padding: 8px 14px;
+          padding: 6px 12px;
           border-radius: 20px;
-          transition: background 0.15s ease, color 0.15s ease;
+          cursor: pointer;
+          white-space: nowrap;
+          display: flex;
+          align-items: center;
+          gap: 5px;
         }
 
-        .ggm-nav-link:hover {
-          color: #e5e7eb;
-          background: rgba(148, 163, 184, 0.08);
-        }
-
-        .ggm-nav-link-active {
+        .ggm-filter-btn.active {
+          background: rgba(34, 197, 94, 0.15);
           color: #22c55e;
-          background: rgba(34, 197, 94, 0.12);
+          border-color: #22c55e;
         }
 
-        .ggm-nav-link-active:hover {
+        .ggm-date-btn {
+          background: #0b1120;
+          border: 1px solid #1e293b;
+          color: #64748b;
+          font-size: 11px;
+          font-weight: 600;
+          padding: 4px 10px;
+          border-radius: 6px;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+
+        .ggm-date-btn.active {
           color: #22c55e;
-          background: rgba(34, 197, 94, 0.18);
+          border-color: #22c55e;
+        }
+
+        .ggm-fav-star {
+          cursor: pointer;
+          font-size: 15px;
+          color: #334155;
+          transition: color 0.15s;
+        }
+
+        .ggm-fav-star.active {
+          color: #f59e0b;
         }
 
         .ggm-live-dot {
-          width: 7px;
-          height: 7px;
+          width: 6px;
+          height: 6px;
           border-radius: 50%;
-          background: #22c55e;
+          background: #ef4444;
           display: inline-block;
-          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
-          animation: ggm-pulse 1.6s infinite;
-        }
-
-        @keyframes ggm-pulse {
-          0% {
-            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
-          }
-          70% {
-            box-shadow: 0 0 0 7px rgba(34, 197, 94, 0);
-          }
-          100% {
-            box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
-          }
+          box-shadow: 0 0 6px #ef4444;
         }
 
         .ggm-league-group {
           background: #0f1626;
           border: 1px solid #1e293b;
-          border-radius: 14px;
+          border-radius: 12px;
           overflow: hidden;
-          margin-bottom: 14px;
+          margin-bottom: 12px;
         }
 
         .ggm-row {
@@ -451,14 +436,12 @@ export default function Home() {
           .ggm-team-name {
             font-size: 12px !important;
           }
-
           .ggm-team-logo {
-            width: 24px !important;
-            height: 24px !important;
+            width: 22px !important;
+            height: 22px !important;
           }
-
           .ggm-score {
-            font-size: 16px !important;
+            font-size: 15px !important;
           }
         }
       `}</style>
@@ -466,49 +449,19 @@ export default function Home() {
   );
 }
 
-function HeroStat({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent: string;
-}) {
+function HeroStat({ label, value, accent }: { label: string; value: string; accent: string }) {
   return (
     <div
       style={{
         background: "#0f1626",
         border: "1px solid #1e293b",
-        borderRadius: "12px",
-        padding: "12px 18px",
-        minWidth: "88px",
+        borderRadius: "8px",
+        padding: "6px 12px",
         textAlign: "center",
       }}
     >
-      <div
-        style={{
-          fontSize: "22px",
-          fontWeight: 900,
-          color: accent,
-          lineHeight: 1,
-        }}
-      >
-        {value}
-      </div>
-
-      <div
-        style={{
-          marginTop: "5px",
-          fontSize: "10px",
-          fontWeight: 700,
-          letterSpacing: "0.04em",
-          textTransform: "uppercase",
-          color: "#64748b",
-        }}
-      >
-        {label}
-      </div>
+      <div style={{ fontSize: "15px", fontWeight: 900, color: accent, lineHeight: 1 }}>{value}</div>
+      <div style={{ marginTop: "2px", fontSize: "9px", fontWeight: 700, color: "#64748b" }}>{label}</div>
     </div>
   );
 }
@@ -517,39 +470,19 @@ function getLeagueKey(league: Match["league"]): string {
   if (league.id !== undefined && league.id !== null) {
     return `league-${league.id}`;
   }
-
-  return `fallback-${league.country.trim().toLowerCase()}-${league.name
-    .trim()
-    .toLowerCase()}`;
+  return `fallback-${league.country.trim().toLowerCase()}-${league.name.trim().toLowerCase()}`;
 }
 
-function groupMatchesByLeague(
-  matches: Match[]
-): {
-  key: string;
-  league: Match["league"];
-  matches: Match[];
-}[] {
-  const groups = new Map<
-    string,
-    {
-      league: Match["league"];
-      matches: Match[];
-    }
-  >();
+function groupMatchesByLeague(matches: Match[]) {
+  const groups = new Map<string, { league: Match["league"]; matches: Match[] }>();
 
   for (const match of matches) {
     const key = getLeagueKey(match.league);
-
     const existing = groups.get(key);
-
     if (existing) {
       existing.matches.push(match);
     } else {
-      groups.set(key, {
-        league: match.league,
-        matches: [match],
-      });
+      groups.set(key, { league: match.league, matches: [match] });
     }
   }
 
@@ -560,189 +493,37 @@ function groupMatchesByLeague(
   }));
 }
 
-function MatchSection({
-  title,
-  subtitle,
-  matches,
-  type,
-  emptyText,
-}: {
-  title: string;
-  subtitle: string;
-  matches: Match[];
-  type: SectionType;
-  emptyText: string;
-}) {
-  const leagueGroups = groupMatchesByLeague(matches);
-
-  return (
-    <section style={{ marginBottom: "38px" }}>
-      <div
-        style={{
-          marginBottom: "16px",
-          display: "flex",
-          alignItems: "center",
-          gap: "12px",
-          flexWrap: "wrap",
-        }}
-      >
-        <div
-          style={{
-            width: "4px",
-            height: "34px",
-            borderRadius: "4px",
-            background:
-              type === "live"
-                ? "#ef4444"
-                : type === "upcoming"
-                  ? "#22c55e"
-                  : "#64748b",
-            flexShrink: 0,
-          }}
-        />
-
-        <div style={{ flex: 1 }}>
-          <h2
-            style={{
-              margin: 0,
-              fontSize: "18px",
-              fontWeight: 800,
-              letterSpacing: "0.02em",
-              color: "#f1f5f9",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-            }}
-          >
-            {type === "live" && <span className="ggm-live-dot" />}
-            {title}
-          </h2>
-
-          <div
-            style={{
-              marginTop: "3px",
-              color: "#64748b",
-              fontSize: "12px",
-            }}
-          >
-            {subtitle}
-          </div>
-        </div>
-
-        <div
-          style={{
-            background: "#0f1626",
-            border: "1px solid #1e293b",
-            color: "#94a3b8",
-            fontSize: "11px",
-            fontWeight: 700,
-            padding: "4px 12px",
-            borderRadius: "20px",
-          }}
-        >
-          {matches.length} {matches.length === 1 ? "match" : "matches"}
-        </div>
-      </div>
-
-      {matches.length === 0 ? (
-        <div
-          style={{
-            background: "#0f1626",
-            borderRadius: "14px",
-            padding: "24px",
-            color: "#64748b",
-            fontSize: "13px",
-            border: "1px solid #1e293b",
-          }}
-        >
-          {emptyText}
-        </div>
-      ) : (
-        <div>
-          {leagueGroups.map((group) => (
-            <LeagueGroup
-              key={group.key}
-              league={group.league}
-              matches={group.matches}
-              type={type}
-            />
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
 function LeagueGroup({
   league,
   matches,
-  type,
+  favorites,
+  onToggleFavorite,
 }: {
   league: Match["league"];
   matches: Match[];
-  type: SectionType;
+  favorites: number[];
+  onToggleFavorite: (e: React.MouseEvent, id: number) => void;
 }) {
   return (
     <div className="ggm-league-group">
       <div
         style={{
           background: "rgba(255,255,255,0.025)",
-          padding: "11px 14px",
+          padding: "8px 12px",
           borderBottom: "1px solid #1e293b",
           display: "flex",
           alignItems: "center",
-          gap: "10px",
+          gap: "8px",
         }}
       >
         {league.logo && (
-          <img
-            src={league.logo}
-            alt=""
-            width="24"
-            height="24"
-            style={{
-              objectFit: "contain",
-              flexShrink: 0,
-            }}
-          />
+          <img src={league.logo} alt="" width="20" height="20" style={{ objectFit: "contain" }} />
         )}
-
-        <div style={{ minWidth: 0 }}>
-          <div
-            style={{
-              fontSize: "13px",
-              fontWeight: 800,
-              color: "#f1f5f9",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {league.name}
-          </div>
-
-          <div
-            style={{
-              fontSize: "11px",
-              color: "#64748b",
-              marginTop: "2px",
-            }}
-          >
-            {league.country}
-          </div>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontSize: "12px", fontWeight: 800, color: "#f1f5f9" }}>{league.name}</div>
+          <div style={{ fontSize: "10px", color: "#64748b" }}>{league.country}</div>
         </div>
-
-        <div
-          style={{
-            marginLeft: "auto",
-            fontSize: "11px",
-            fontWeight: 700,
-            color: "#64748b",
-            flexShrink: 0,
-          }}
-        >
-          {matches.length} {matches.length === 1 ? "match" : "matches"}
-        </div>
+        <div style={{ fontSize: "10px", fontWeight: 700, color: "#64748b" }}>{matches.length}</div>
       </div>
 
       <div>
@@ -750,7 +531,8 @@ function LeagueGroup({
           <MatchRow
             key={match.fixture.id}
             match={match}
-            type={type}
+            isFav={favorites.includes(match.fixture.id)}
+            onToggleFav={(e) => onToggleFavorite(e, match.fixture.id)}
           />
         ))}
       </div>
@@ -759,67 +541,66 @@ function LeagueGroup({
 }
 
 function formatKickoffTime(dateString?: string): string {
-  if (!dateString) {
-    return "--:--";
-  }
-
+  if (!dateString) return "--:--";
   const parsed = new Date(dateString);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return "--:--";
-  }
-
-  return parsed.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  if (Number.isNaN(parsed.getTime())) return "--:--";
+  return parsed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 function MatchRow({
   match,
-  type,
+  isFav,
+  onToggleFav,
 }: {
   match: Match;
-  type: SectionType;
+  isFav: boolean;
+  onToggleFav: (e: React.MouseEvent) => void;
 }) {
-  const statusText =
-    type === "live"
-      ? match.fixture.status.elapsed != null
-        ? `${match.fixture.status.elapsed}'`
-        : match.fixture.status.short
-      : type === "finished"
-        ? "FT"
-        : formatKickoffTime(match.fixture.date);
+  const isLive = LIVE_STATUSES.includes(match.fixture.status.short);
+  const isFinished = FINISHED_STATUSES.includes(match.fixture.status.short);
+
+  const statusText = isLive
+    ? match.fixture.status.elapsed != null
+      ? `${match.fixture.status.elapsed}'`
+      : match.fixture.status.short
+    : isFinished
+    ? "FT"
+    : formatKickoffTime(match.fixture.date);
 
   return (
-    <a
-      href={`/matches/${match.fixture.id}`}
-      className="ggm-row"
-    >
+    <a href={`/matches/${match.fixture.id}`} className="ggm-row">
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 74px 1fr",
+          gridTemplateColumns: "24px 1fr 70px 1fr",
           alignItems: "center",
-          padding: "13px 14px",
-          gap: "8px",
-          minHeight: "54px",
+          padding: "10px 12px",
+          gap: "6px",
+          minHeight: "48px",
         }}
       >
+        {/* Favori Yıldızı */}
+        <span
+          className={`ggm-fav-star ${isFav ? "active" : ""}`}
+          onClick={onToggleFav}
+        >
+          ★
+        </span>
+
+        {/* Ev Sahibi */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "flex-end",
-            gap: "8px",
-            textAlign: "right",
+            gap: "6px",
             minWidth: 0,
           }}
         >
           <strong
             className="ggm-team-name"
             style={{
-              fontSize: "13px",
+              fontSize: "12px",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -827,55 +608,33 @@ function MatchRow({
           >
             {match.teams.home.name}
           </strong>
-
           <img
             src={match.teams.home.logo}
             alt=""
-            width="26"
-            height="26"
+            width="22"
+            height="22"
             className="ggm-team-logo"
-            style={{
-              objectFit: "contain",
-              flexShrink: 0,
-            }}
+            style={{ objectFit: "contain", flexShrink: 0 }}
           />
         </div>
 
+        {/* Skor / Saat */}
         <div style={{ textAlign: "center" }}>
-          {type === "upcoming" ? (
-            <div
-              className="ggm-score"
-              style={{
-                fontSize: "14px",
-                fontWeight: 800,
-                color: "#22c55e",
-              }}
-            >
+          {!isLive && !isFinished ? (
+            <div className="ggm-score" style={{ fontSize: "13px", fontWeight: 800, color: "#22c55e" }}>
               {statusText}
             </div>
           ) : (
             <>
-              <div
-                className="ggm-score"
-                style={{
-                  fontSize: "18px",
-                  fontWeight: 900,
-                  color: "#f8fafc",
-                }}
-              >
+              <div className="ggm-score" style={{ fontSize: "16px", fontWeight: 900, color: "#f8fafc" }}>
                 {`${match.goals.home ?? 0} - ${match.goals.away ?? 0}`}
               </div>
-
               <div
                 style={{
-                  marginTop: "3px",
-                  fontSize: "10px",
+                  marginTop: "2px",
+                  fontSize: "9px",
                   fontWeight: 800,
-                  letterSpacing: "0.03em",
-                  color:
-                    type === "live"
-                      ? "#ef4444"
-                      : "#64748b",
+                  color: isLive ? "#ef4444" : "#64748b",
                 }}
               >
                 {statusText}
@@ -884,30 +643,20 @@ function MatchRow({
           )}
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            minWidth: 0,
-          }}
-        >
+        {/* Deplasman */}
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0 }}>
           <img
             src={match.teams.away.logo}
             alt=""
-            width="26"
-            height="26"
+            width="22"
+            height="22"
             className="ggm-team-logo"
-            style={{
-              objectFit: "contain",
-              flexShrink: 0,
-            }}
+            style={{ objectFit: "contain", flexShrink: 0 }}
           />
-
           <strong
             className="ggm-team-name"
             style={{
-              fontSize: "13px",
+              fontSize: "12px",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",

@@ -1,4 +1,4 @@
-  const leagueGroups = groupMatchesByLeague(filteredMatches);
+    const leagueGroups = groupMatchesByLeague(filteredMatches);
 
   return (
     <main

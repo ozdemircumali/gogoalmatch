@@ -58,11 +58,38 @@ async function getMatchEvents(id: string) {
   }
 }
 
+async function getMatchStatistics(id: string) {
+  const apiKey = process.env.API_FOOTBALL_KEY;
+
+  if (!apiKey) return [];
+
+  try {
+    const res = await fetch(
+      `https://v3.football.api-sports.io/fixtures/statistics?fixture=${id}`,
+      {
+        headers: {
+          "x-apisports-key": apiKey,
+        },
+        cache: "no-store",
+      }
+    );
+
+    if (!res.ok) return [];
+
+    const data = await res.json();
+
+    return data.response || [];
+  } catch {
+    return [];
+  }
+}
+
 export default async function MatchDetailPage({
   params,
 }: MatchPageProps) {
   const match = await getMatchData(params.id);
   const events = await getMatchEvents(params.id);
+  const statistics = await getMatchStatistics(params.id);
 
   if (!match) {
     return (
@@ -83,16 +110,12 @@ export default async function MatchDetailPage({
             padding: "40px",
             borderRadius: "16px",
             textAlign: "center",
-            maxWidth: "500px",
-            width: "100%",
           }}
         >
           <h1>Match Not Found</h1>
-
           <p style={{ color: "#6b7280" }}>
             We couldn't load the match information.
           </p>
-
           <a
             href="/"
             style={{
@@ -179,8 +202,6 @@ export default async function MatchDetailPage({
           padding: "25px 20px 50px",
         }}
       >
-        {/* LEAGUE */}
-
         <div
           style={{
             background: "white",
@@ -190,12 +211,7 @@ export default async function MatchDetailPage({
             borderBottom: "1px solid #e5e7eb",
           }}
         >
-          <div
-            style={{
-              fontSize: "17px",
-              fontWeight: 800,
-            }}
-          >
+          <div style={{ fontSize: "17px", fontWeight: 800 }}>
             {league?.name}
           </div>
 
@@ -212,8 +228,6 @@ export default async function MatchDetailPage({
               : ""}
           </div>
         </div>
-
-        {/* SCORE */}
 
         <div
           style={{
@@ -251,12 +265,7 @@ export default async function MatchDetailPage({
               </div>
             </div>
 
-            <div
-              style={{
-                textAlign: "center",
-                minWidth: "110px",
-              }}
-            >
+            <div style={{ textAlign: "center" }}>
               <div
                 style={{
                   fontSize: "42px",
@@ -313,130 +322,136 @@ export default async function MatchDetailPage({
             background: "white",
             borderRadius: "14px",
             padding: "20px",
-            boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
           }}
         >
-          <h2
-            style={{
-              margin: "0 0 20px",
-              fontSize: "20px",
-            }}
-          >
+          <h2 style={{ margin: "0 0 20px" }}>
             Match Events
           </h2>
 
           {events.length === 0 ? (
-            <div
-              style={{
-                textAlign: "center",
-                padding: "25px",
-                color: "#6b7280",
-              }}
-            >
+            <p style={{ color: "#6b7280" }}>
               No events available
-            </div>
+            </p>
           ) : (
-            <div>
-              {events.map((event: any, index: number) => {
-                const isHome =
-                  event.team?.id === teams.home.id;
+            events.map((event: any, index: number) => {
+              const isHome =
+                event.team?.id === teams.home.id;
 
-                return (
-                  <div
-                    key={index}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 70px 1fr",
-                      alignItems: "center",
-                      padding: "14px 0",
-                      borderBottom:
-                        "1px solid #e5e7eb",
-                    }}
-                  >
+              return (
+                <div
+                  key={index}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 70px 1fr",
+                    alignItems: "center",
+                    padding: "14px 0",
+                    borderBottom: "1px solid #e5e7eb",
+                  }}
+                >
+                  <div style={{ textAlign: "right" }}>
+                    {isHome && (
+                      <strong>
+                        {event.player?.name || "-"}
+                      </strong>
+                    )}
+                  </div>
+
+                  <div style={{ textAlign: "center" }}>
                     <div
                       style={{
-                        textAlign: "right",
-                        paddingRight: "15px",
+                        fontSize: "13px",
+                        color: "#6b7280",
                       }}
                     >
-                      {isHome && (
-                        <>
-                          <strong>
-                            {event.player?.name || "-"}
-                          </strong>
-
-                          {event.assist?.name && (
-                            <div
-                              style={{
-                                fontSize: "12px",
-                                color: "#6b7280",
-                                marginTop: "3px",
-                              }}
-                            >
-                              Assist:{" "}
-                              {event.assist.name}
-                            </div>
-                          )}
-                        </>
-                      )}
+                      {event.time?.elapsed}'
                     </div>
 
-                    <div
-                      style={{
-                        textAlign: "center",
-                        fontWeight: 800,
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: "13px",
-                          color: "#6b7280",
-                        }}
-                      >
-                        {event.time?.elapsed}'
-                      </div>
-
-                      <div
-                        style={{
-                          fontSize: "20px",
-                          marginTop: "3px",
-                        }}
-                      >
-                        {getEventIcon(event.type, event.detail)}
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        textAlign: "left",
-                        paddingLeft: "15px",
-                      }}
-                    >
-                      {!isHome && (
-                        <>
-                          <strong>
-                            {event.player?.name || "-"}
-                          </strong>
-
-                          {event.assist?.name && (
-                            <div
-                              style={{
-                                fontSize: "12px",
-                                color: "#6b7280",
-                                marginTop: "3px",
-                              }}
-                            >
-                              Assist:{" "}
-                              {event.assist.name}
-                            </div>
-                          )}
-                        </>
+                    <div style={{ fontSize: "20px" }}>
+                      {getEventIcon(
+                        event.type,
+                        event.detail
                       )}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+
+                  <div>
+                    {!isHome && (
+                      <strong>
+                        {event.player?.name || "-"}
+                      </strong>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* STATISTICS */}
+
+        <div
+          style={{
+            marginTop: "18px",
+            background: "white",
+            borderRadius: "14px",
+            padding: "20px",
+          }}
+        >
+          <h2 style={{ margin: "0 0 20px" }}>
+            Statistics
+          </h2>
+
+          {statistics.length === 0 ? (
+            <p style={{ color: "#6b7280" }}>
+              No statistics available
+            </p>
+          ) : (
+            statistics.map((teamStats: any, index: number) => (
+              <div
+                key={index}
+                style={{
+                  marginBottom: "25px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: 800,
+                    marginBottom: "12px",
+                  }}
+                >
+                  {teamStats.team?.name}
+                </div>
+
+                {teamStats.statistics?.map(
+                  (stat: any, statIndex: number) => (
+                    <div
+                      key={statIndex}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        padding: "9px 0",
+                        borderBottom:
+                          "1px solid #e5e7eb",
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: "#374151",
+                          fontSize: "14px",
+                        }}
+                      >
+                        {stat.type}
+                      </span>
+
+                      <strong>
+                        {stat.value ?? "-"}
+                      </strong>
+                    </div>
+                  )
+                )}
+              </div>
+            ))
           )}
         </div>
 
@@ -450,12 +465,7 @@ export default async function MatchDetailPage({
             padding: "20px",
           }}
         >
-          <h2
-            style={{
-              margin: "0 0 18px",
-              fontSize: "18px",
-            }}
-          >
+          <h2 style={{ margin: "0 0 18px" }}>
             Match Information
           </h2>
 
@@ -489,7 +499,7 @@ export default async function MatchDetailPage({
           </div>
         </div>
 
-        {/* COMING FEATURES */}
+        {/* NEXT */}
 
         <div
           style={{
@@ -499,12 +509,7 @@ export default async function MatchDetailPage({
             padding: "20px",
           }}
         >
-          <h2
-            style={{
-              margin: "0 0 15px",
-              fontSize: "18px",
-            }}
-          >
+          <h2 style={{ margin: "0 0 15px" }}>
             Match Details
           </h2>
 
@@ -516,7 +521,6 @@ export default async function MatchDetailPage({
               gap: "10px",
             }}
           >
-            <Feature title="Statistics" />
             <Feature title="Lineups" />
             <Feature title="Head to Head" />
           </div>

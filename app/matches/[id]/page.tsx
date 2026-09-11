@@ -44,17 +44,15 @@ export default function MatchPage({
   useEffect(() => {
     async function loadMatch() {
       try {
-        const response = await fetch("/api/fixtures", {
+        const response = await fetch(`/api/fixtures/${params.id}`, {
           cache: "no-store",
         });
 
         const data = await response.json();
 
-        const foundMatch = data.response?.find(
-          (item: Match) => item.fixture.id === Number(params.id)
-        );
-
-        setMatch(foundMatch || null);
+        if (data.response && data.response.length > 0) {
+          setMatch(data.response[0]);
+        }
       } catch (error) {
         console.error("Failed to load match:", error);
       } finally {
@@ -94,7 +92,6 @@ export default function MatchPage({
           style={{
             color: "white",
             textDecoration: "none",
-            fontSize: "14px",
           }}
         >
           ← Back to Live Matches
@@ -148,7 +145,12 @@ export default function MatchPage({
             </div>
 
             <div>
-              <div style={{ fontSize: "36px", fontWeight: "bold" }}>
+              <div
+                style={{
+                  fontSize: "36px",
+                  fontWeight: "bold",
+                }}
+              >
                 {match.goals.home ?? 0} - {match.goals.away ?? 0}
               </div>
 
@@ -176,10 +178,22 @@ export default function MatchPage({
             </div>
           </div>
 
-          <hr style={{ margin: "30px 0", border: 0, borderTop: "1px solid #e5e7eb" }} />
+          <hr
+            style={{
+              margin: "30px 0",
+              border: 0,
+              borderTop: "1px solid #e5e7eb",
+            }}
+          />
 
           <p>
-            <strong>Status:</strong> {match.fixture.status.long}
+            <strong>Status:</strong>{" "}
+            {match.fixture.status.long}
+          </p>
+
+          <p>
+            <strong>Match ID:</strong>{" "}
+            {match.fixture.id}
           </p>
         </div>
       </section>

@@ -39,6 +39,25 @@ type FilterTab = "ALL" | "LIVE" | "UPCOMING" | "FINISHED" | "FAV";
 const LIVE_STATUSES = ["1H", "2H", "HT", "ET", "BT", "P"];
 const FINISHED_STATUSES = ["FT", "AET", "PEN"];
 
+function groupMatchesByLeague(matches: Match[]) {
+  const groups: Record<string, Match[]> = {};
+
+  matches.forEach((match) => {
+    const key =
+      match.league.id !== undefined
+        ? `id-${match.league.id}`
+        : `${match.league.country}-${match.league.name}`;
+
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+
+    groups[key].push(match);
+  });
+
+  return Object.values(groups);
+}
+
 export default function Home() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,8 +74,8 @@ export default function Home() {
     if (saved) {
       try {
         setFavorites(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to load favorites", e);
+      } catch {
+        setFavorites([]);
       }
     }
   }, []);
@@ -104,9 +123,7 @@ export default function Home() {
     let updated = [...favorites];
 
     if (updated.includes(id)) {
-      updated = updated.filter(
-        (favId) => favId !== id
-      );
+      updated = updated.filter((favId) => favId !== id);
     } else {
       updated.push(id);
     }
@@ -147,38 +164,24 @@ export default function Home() {
   };
 
   const filteredMatches = matches.filter((match) => {
-    const isLive = LIVE_STATUSES.includes(
-      match.fixture.status.short
-    );
+    const status = match.fixture.status.short;
 
-    const isFinished = FINISHED_STATUSES.includes(
-      match.fixture.status.short
-    );
-
+    const isLive = LIVE_STATUSES.includes(status);
+    const isFinished = FINISHED_STATUSES.includes(status);
     const isUpcoming = !isLive && !isFinished;
-
-    const isFav = favorites.includes(
-      match.fixture.id
-    );
+    const isFav = favorites.includes(match.fixture.id);
 
     if (activeTab === "LIVE" && !isLive) return false;
-    if (activeTab === "UPCOMING" && !isUpcoming)
-      return false;
-    if (activeTab === "FINISHED" && !isFinished)
-      return false;
+    if (activeTab === "UPCOMING" && !isUpcoming) return false;
+    if (activeTab === "FINISHED" && !isFinished) return false;
     if (activeTab === "FAV" && !isFav) return false;
 
     if (searchQuery.trim() !== "") {
       const query = searchQuery.toLowerCase();
 
-      const home =
-        match.teams.home.name.toLowerCase();
-
-      const away =
-        match.teams.away.name.toLowerCase();
-
-      const league =
-        match.league.name.toLowerCase();
+      const home = match.teams.home.name.toLowerCase();
+      const away = match.teams.away.name.toLowerCase();
+      const league = match.league.name.toLowerCase();
 
       return (
         home.includes(query) ||
@@ -190,20 +193,9 @@ export default function Home() {
     return true;
   });
 
-  const liveCount = matches.filter((m) =>
-    LIVE_STATUSES.includes(
-      m.fixture.status.short
-    )
+  const liveCount = matches.filter((match) =>
+    LIVE_STATUSES.includes(match.fixture.status.short)
   ).length;
-
-  const totalLeagues = new Set(
-    matches.map((match) =>
-      match.league.id !== undefined &&
-      match.league.id !== null
-        ? `id-${match.league.id}`
-        : `${match.league.country}-${match.league.name}`
-    )
-  ).size;
 
   const leagueGroups =
     groupMatchesByLeague(filteredMatches);
@@ -213,771 +205,477 @@ export default function Home() {
       style={{
         minHeight: "100vh",
         background: "#f7f7f7",
-        color: "#171717",
+        color: "#222",
         fontFamily:
           "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
       }}
     >
       <header
         style={{
+          background: "#ffffff",
+          borderBottom: "1px solid #e5e5e5",
           position: "sticky",
           top: 0,
-          zIndex: 50,
-          background: "rgba(255,255,255,0.97)",
-          backdropFilter: "blur(10px)",
-          borderBottom: "1px solid #e5e5e5",
+          zIndex: 20,
         }}
       >
         <div
           style={{
-            maxWidth: "1200px",
+            maxWidth: 1100,
             margin: "0 auto",
-            padding: "12px 20px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "16px",
+            padding: "18px 16px",
           }}
         >
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "10px",
+              justifyContent: "space-between",
+              gap: 15,
             }}
           >
-            <div
-              style={{
-                width: "34px",
-                height: "34px",
-                borderRadius: "8px",
-                background:
-                  "linear-gradient(135deg, #fb923c, #ea580c)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 900,
-                fontSize: "18px",
-                color: "#ffffff",
-                boxShadow:
-                  "0 3px 10px rgba(249,115,22,0.25)",
-              }}
-            >
-              G
-            </div>
-
-            <div
-              style={{
-                fontSize: "20px",
-                fontWeight: 800,
-                lineHeight: 1,
-                color: "#171717",
-              }}
-            >
-              GoGoal
-              <span style={{ color: "#f97316" }}>
-                Match
-              </span>
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              gap: "8px",
-            }}
-          >
-            <HeroStat
-              label="Live"
-              value={
-                loading ? "–" : String(liveCount)
-              }
-              accent="#ef4444"
-            />
-
-            <HeroStat
-              label="Total"
-              value={
-                loading
-                  ? "–"
-                  : String(matches.length)
-              }
-              accent="#f97316"
-            />
-
-            <HeroStat
-              label="Leagues"
-              value={
-                loading
-                  ? "–"
-                  : String(totalLeagues)
-              }
-              accent="#2563eb"
-            />
-          </div>
-        </div>
-
-        <div
-          style={{
-            maxWidth: "1200px",
-            margin: "0 auto",
-            padding: "0 20px 12px",
-          }}
-        >
-          <input
-            type="text"
-            placeholder="Search team or league..."
-            value={searchQuery}
-            onChange={(e) =>
-              setSearchQuery(e.target.value)
-            }
-            style={{
-              width: "100%",
-              background: "#ffffff",
-              border: "1px solid #d4d4d4",
-              borderRadius: "8px",
-              padding: "9px 14px",
-              color: "#171717",
-              fontSize: "13px",
-              outline: "none",
-              boxSizing: "border-box",
-            }}
-          />
-
-          <div
-            style={{
-              display: "flex",
-              gap: "6px",
-              marginTop: "10px",
-              overflowX: "auto",
-              paddingBottom: "2px",
-            }}
-          >
-            <button
-              className={`ggm-filter-btn ${
-                activeTab === "ALL"
-                  ? "active"
-                  : ""
-              }`}
-              onClick={() =>
-                setActiveTab("ALL")
-              }
-            >
-              ALL ({matches.length})
-            </button>
-
-            <button
-              className={`ggm-filter-btn ${
-                activeTab === "LIVE"
-                  ? "active"
-                  : ""
-              }`}
-              onClick={() =>
-                setActiveTab("LIVE")
-              }
-            >
-              <span className="ggm-live-dot" />
-              LIVE ({liveCount})
-            </button>
-
-            <button
-              className={`ggm-filter-btn ${
-                activeTab === "UPCOMING"
-                  ? "active"
-                  : ""
-              }`}
-              onClick={() =>
-                setActiveTab("UPCOMING")
-              }
-            >
-              UPCOMING
-            </button>
-
-            <button
-              className={`ggm-filter-btn ${
-                activeTab === "FINISHED"
-                  ? "active"
-                  : ""
-              }`}
-              onClick={() =>
-                setActiveTab("FINISHED")
-              }
-            >
-              FINISHED
-            </button>
-
-            <button
-              className={`ggm-filter-btn ${
-                activeTab === "FAV"
-                  ? "active"
-                  : ""
-              }`}
-              onClick={() =>
-                setActiveTab("FAV")
-              }
-            >
-              ★ FAV ({favorites.length})
-            </button>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              gap: "6px",
-              marginTop: "8px",
-              overflowX: "auto",
-            }}
-          >
-            {generateDateTabs().map((item) => (
-              <button
-                key={item.iso}
-                className={`ggm-date-btn ${
-                  selectedDate === item.iso
-                    ? "active"
-                    : ""
-                }`}
-                onClick={() =>
-                  setSelectedDate(item.iso)
-                }
+            <div>
+              <h1
+                style={{
+                  margin: 0,
+                  fontSize: 28,
+                  fontWeight: 800,
+                  color: "#f97316",
+                }}
               >
-                {item.label}
-              </button>
-            ))}
+                GoGoalMatch
+              </h1>
+
+              <p
+                style={{
+                  margin: "3px 0 0",
+                  fontSize: 13,
+                  color: "#777",
+                }}
+              >
+                Live Scores, Results & Statistics
+              </p>
+            </div>
+
+            <div
+              style={{
+                background: "#fff7ed",
+                color: "#ea580c",
+                padding: "8px 12px",
+                borderRadius: 20,
+                fontSize: 13,
+                fontWeight: 700,
+              }}
+            >
+              {liveCount} LIVE
+            </div>
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <input
+              type="text"
+              placeholder="Search team or league..."
+              value={searchQuery}
+              onChange={(e) =>
+                setSearchQuery(e.target.value)
+              }
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                padding: "12px 14px",
+                border: "1px solid #ddd",
+                borderRadius: 10,
+                background: "#fff",
+                color: "#222",
+                fontSize: 14,
+                outline: "none",
+              }}
+            />
           </div>
         </div>
       </header>
 
-      <section
+      <div
         style={{
-          maxWidth: "1200px",
+          maxWidth: 1100,
           margin: "0 auto",
-          padding: "20px 20px 60px",
+          padding: "16px",
         }}
       >
-        {loading ? (
-          <div className="ggm-message">
-            Loading matches...
-          </div>
-        ) : leagueGroups.length === 0 ? (
-          <div className="ggm-message">
-            No matches found for the selected filter.
-          </div>
-        ) : (
-          leagueGroups.map((group) => (
-            <LeagueGroup
-              key={group.key}
-              league={group.league}
-              matches={group.matches}
-              favorites={favorites}
-              onToggleFavorite={toggleFavorite}
-            />
-          ))
-        )}
-      </section>
-
-      <footer
-        style={{
-          borderTop: "1px solid #e5e5e5",
-          padding: "24px 20px",
-          textAlign: "center",
-          color: "#737373",
-          fontSize: "12px",
-          background: "#ffffff",
-        }}
-      >
-        © {new Date().getFullYear()} GoGoalMatch —
-        Live sports scores & standings.
-      </footer>
-
-      <style jsx global>{`
-        .ggm-filter-btn {
-          background: #ffffff;
-          border: 1px solid #d4d4d4;
-          color: #525252;
-          font-size: 11px;
-          font-weight: 700;
-          padding: 6px 12px;
-          border-radius: 20px;
-          cursor: pointer;
-          white-space: nowrap;
-          display: flex;
-          align-items: center;
-          gap: 5px;
-        }
-
-        .ggm-filter-btn.active {
-          background: #fff7ed;
-          color: #ea580c;
-          border-color: #f97316;
-        }
-
-        .ggm-date-btn {
-          background: #ffffff;
-          border: 1px solid #d4d4d4;
-          color: #737373;
-          font-size: 11px;
-          font-weight: 600;
-          padding: 4px 10px;
-          border-radius: 6px;
-          cursor: pointer;
-          white-space: nowrap;
-        }
-
-        .ggm-date-btn.active {
-          color: #ea580c;
-          border-color: #f97316;
-          background: #fff7ed;
-        }
-
-        .ggm-fav-star {
-          cursor: pointer;
-          font-size: 15px;
-          color: #a3a3a3;
-        }
-
-        .ggm-fav-star.active {
-          color: #f97316;
-        }
-
-        .ggm-live-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: #ef4444;
-          display: inline-block;
-        }
-
-        .ggm-league-group {
-          background: #ffffff;
-          border: 1px solid #e5e5e5;
-          border-radius: 12px;
-          overflow: hidden;
-          margin-bottom: 12px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-
-        .ggm-row {
-          display: block;
-          text-decoration: none;
-          color: #171717;
-          transition: background 0.15s ease;
-        }
-
-        .ggm-row:hover {
-          background: #fff7ed;
-        }
-
-        .ggm-row + .ggm-row {
-          border-top: 1px solid #eeeeee;
-        }
-
-        .ggm-message {
-          background: #ffffff;
-          border: 1px solid #e5e5e5;
-          padding: 40px 20px;
-          border-radius: 14px;
-          text-align: center;
-          color: #737373;
-          font-size: 14px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-
-        @media (max-width: 640px) {
-          .ggm-team-name {
-            font-size: 12px !important;
-          }
-
-          .ggm-team-logo {
-            width: 22px !important;
-            height: 22px !important;
-          }
-
-          .ggm-score {
-            font-size: 15px !important;
-          }
-        }
-      `}</style>
-    </main>
-  );
-}
-
-function HeroStat({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent: string;
-}) {
-  return (
-    <div
-      style={{
-        background: "#ffffff",
-        border: "1px solid #e5e5e5",
-        borderRadius: "8px",
-        padding: "6px 12px",
-        textAlign: "center",
-      }}
-    >
-      <div
-        style={{
-          fontSize: "15px",
-          fontWeight: 900,
-          color: accent,
-          lineHeight: 1,
-        }}
-      >
-        {value}
-      </div>
-
-      <div
-        style={{
-          marginTop: "2px",
-          fontSize: "9px",
-          fontWeight: 700,
-          color: "#737373",
-        }}
-      >
-        {label}
-      </div>
-    </div>
-  );
-}
-
-function getLeagueKey(
-  league: Match["league"]
-): string {
-  if (
-    league.id !== undefined &&
-    league.id !== null
-  ) {
-    return `league-${league.id}`;
-  }
-
-  return `fallback-${league.country
-    .trim()
-    .toLowerCase()}-${league.name
-    .trim()
-    .toLowerCase()}`;
-}
-
-function groupMatchesByLeague(
-  matches: Match[]
-) {
-  const groups = new Map<
-    string,
-    {
-      league: Match["league"];
-      matches: Match[];
-    }
-  >();
-
-  for (const match of matches) {
-    const key = getLeagueKey(match.league);
-    const existing = groups.get(key);
-
-    if (existing) {
-      existing.matches.push(match);
-    } else {
-      groups.set(key, {
-        league: match.league,
-        matches: [match],
-      });
-    }
-  }
-
-  return Array.from(groups.entries()).map(
-    ([key, value]) => ({
-      key,
-      league: value.league,
-      matches: value.matches,
-    })
-  );
-}
-
-function formatKickoffTime(
-  dateString?: string
-): string {
-  if (!dateString) return "--:--";
-
-  const parsed = new Date(dateString);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return "--:--";
-  }
-
-  return parsed.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function LeagueGroup({
-  league,
-  matches,
-  favorites,
-  onToggleFavorite,
-}: {
-  league: Match["league"];
-  matches: Match[];
-  favorites: number[];
-  onToggleFavorite: (
-    e: React.MouseEvent,
-    id: number
-  ) => void;
-}) {
-  return (
-    <div className="ggm-league-group">
-      <div
-        style={{
-          background: "#fffaf5",
-          padding: "8px 12px",
-          borderBottom: "1px solid #eeeeee",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-        }}
-      >
-        {league.logo && (
-          <img
-            src={league.logo}
-            alt=""
-            width="20"
-            height="20"
-            style={{
-              objectFit: "contain",
-            }}
-          />
-        )}
-
-        <div
-          style={{
-            minWidth: 0,
-            flex: 1,
-          }}
-        >
-          <div
-            style={{
-              fontSize: "12px",
-              fontWeight: 800,
-              color: "#171717",
-            }}
-          >
-            {league.name}
-          </div>
-
-          <div
-            style={{
-              fontSize: "10px",
-              color: "#737373",
-            }}
-          >
-            {league.country}
-          </div>
-        </div>
-
-        <div
-          style={{
-            fontSize: "10px",
-            fontWeight: 700,
-            color: "#737373",
-          }}
-        >
-          {matches.length}
-        </div>
-      </div>
-
-      <div>
-        {matches.map((match) => (
-          <MatchRow
-            key={match.fixture.id}
-            match={match}
-            isFav={favorites.includes(
-              match.fixture.id
-            )}
-            onToggleFav={(e) =>
-              onToggleFavorite(
-                e,
-                match.fixture.id
-              )
-            }
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function MatchRow({
-  match,
-  isFav,
-  onToggleFav,
-}: {
-  match: Match;
-  isFav: boolean;
-  onToggleFav: (
-    e: React.MouseEvent
-  ) => void;
-}) {
-  const isLive = LIVE_STATUSES.includes(
-    match.fixture.status.short
-  );
-
-  const isFinished =
-    FINISHED_STATUSES.includes(
-      match.fixture.status.short
-    );
-
-  const statusText = isLive
-    ? match.fixture.status.elapsed != null
-      ? `${match.fixture.status.elapsed}'`
-      : match.fixture.status.short
-    : isFinished
-    ? "FT"
-    : formatKickoffTime(
-        match.fixture.date
-      );
-
-  return (
-    <a
-      href={`/matches/${match.fixture.id}`}
-      className="ggm-row"
-    >
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns:
-            "24px 1fr 70px 1fr",
-          alignItems: "center",
-          padding: "10px 12px",
-          gap: "6px",
-          minHeight: "48px",
-        }}
-      >
-        <span
-          className={`ggm-fav-star ${
-            isFav ? "active" : ""
-          }`}
-          onClick={onToggleFav}
-        >
-          ★
-        </span>
-
         <div
           style={{
             display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            gap: "6px",
-            minWidth: 0,
+            gap: 8,
+            overflowX: "auto",
+            paddingBottom: 6,
           }}
         >
-          <strong
-            className="ggm-team-name"
-            style={{
-              fontSize: "12px",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {match.teams.home.name}
-          </strong>
-
-          <img
-            src={match.teams.home.logo}
-            alt=""
-            width="22"
-            height="22"
-            className="ggm-team-logo"
-            style={{
-              objectFit: "contain",
-              flexShrink: 0,
-            }}
-          />
-        </div>
-
-        <div
-          style={{
-            textAlign: "center",
-          }}
-        >
-          {!isLive && !isFinished ? (
-            <div
-              className="ggm-score"
+          {generateDateTabs().map((date) => (
+            <button
+              key={date.iso}
+              onClick={() =>
+                setSelectedDate(date.iso)
+              }
               style={{
-                fontSize: "13px",
-                fontWeight: 800,
-                color: "#f97316",
+                flex: "0 0 auto",
+                padding: "9px 14px",
+                borderRadius: 9,
+                border:
+                  selectedDate === date.iso
+                    ? "1px solid #f97316"
+                    : "1px solid #ddd",
+                background:
+                  selectedDate === date.iso
+                    ? "#f97316"
+                    : "#fff",
+                color:
+                  selectedDate === date.iso
+                    ? "#fff"
+                    : "#555",
+                fontWeight: 700,
+                cursor: "pointer",
               }}
             >
-              {statusText}
-            </div>
-          ) : (
-            <>
-              <div
-                className="ggm-score"
-                style={{
-                  fontSize: "16px",
-                  fontWeight: 900,
-                  color: "#171717",
-                }}
-              >
-                {`${match.goals.home ?? 0} - ${
-                  match.goals.away ?? 0
-                }`}
-              </div>
-
-              <div
-                style={{
-                  marginTop: "2px",
-                  fontSize: "9px",
-                  fontWeight: 800,
-                  color: isLive
-                    ? "#ef4444"
-                    : "#737373",
-                }}
-              >
-                {statusText}
-              </div>
-            </>
-          )}
+              {date.label}
+            </button>
+          ))}
         </div>
 
         <div
           style={{
             display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            minWidth: 0,
+            gap: 8,
+            marginTop: 14,
+            overflowX: "auto",
+            paddingBottom: 4,
           }}
         >
-          <img
-            src={match.teams.away.logo}
-            alt=""
-            width="22"
-            height="22"
-            className="ggm-team-logo"
-            style={{
-              objectFit: "contain",
-              flexShrink: 0,
-            }}
-          />
+          {(
+            [
+              ["ALL", "All"],
+              ["LIVE", "Live"],
+              ["UPCOMING", "Upcoming"],
+              ["FINISHED", "Finished"],
+              ["FAV", "Favorites"],
+            ] as [FilterTab, string][]
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => setActiveTab(value)}
+              style={{
+                flex: "0 0 auto",
+                padding: "8px 13px",
+                border: "none",
+                borderRadius: 8,
+                background:
+                  activeTab === value
+                    ? "#ea580c"
+                    : "#ffffff",
+                color:
+                  activeTab === value
+                    ? "#ffffff"
+                    : "#555",
+                boxShadow:
+                  activeTab === value
+                    ? "0 2px 6px rgba(234,88,12,0.25)"
+                    : "0 1px 3px rgba(0,0,0,0.08)",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
-          <strong
-            className="ggm-team-name"
+        {loading ? (
+          <div
             style={{
-              fontSize: "12px",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
+              textAlign: "center",
+              padding: "60px 20px",
+              color: "#777",
             }}
           >
-            {match.teams.away.name}
-          </strong>
-        </div>
+            Loading matches...
+          </div>
+        ) : filteredMatches.length === 0 ? (
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 12,
+              padding: "50px 20px",
+              marginTop: 18,
+              textAlign: "center",
+              border: "1px solid #e5e5e5",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 40,
+                marginBottom: 10,
+              }}
+            >
+              ⚽
+            </div>
+
+            <h2
+              style={{
+                margin: 0,
+                fontSize: 20,
+              }}
+            >
+              No matches found
+            </h2>
+
+            <p
+              style={{
+                color: "#777",
+                marginTop: 8,
+              }}
+            >
+              Try another date or search.
+            </p>
+          </div>
+        ) : (
+          <div style={{ marginTop: 18 }}>
+            {leagueGroups.map((leagueMatches) => {
+              const league = leagueMatches[0].league;
+
+              return (
+                <section
+                  key={
+                    league.id ??
+                    `${league.country}-${league.name}`
+                  }
+                  style={{
+                    marginBottom: 18,
+                    background: "#fff",
+                    borderRadius: 12,
+                    overflow: "hidden",
+                    border: "1px solid #e5e5e5",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "12px 14px",
+                      background: "#fff7ed",
+                      borderBottom:
+                        "1px solid #fed7aa",
+                    }}
+                  >
+                    {league.logo && (
+                      <img
+                        src={league.logo}
+                        alt=""
+                        width={28}
+                        height={28}
+                        style={{
+                          objectFit: "contain",
+                        }}
+                      />
+                    )}
+
+                    <div>
+                      <div
+                        style={{
+                          fontWeight: 800,
+                          color: "#222",
+                        }}
+                      >
+                        {league.name}
+                      </div>
+
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "#888",
+                        }}
+                      >
+                        {league.country}
+                      </div>
+                    </div>
+                  </div>
+
+                  {leagueMatches.map((match) => {
+                    const status =
+                      match.fixture.status.short;
+
+                    const isLive =
+                      LIVE_STATUSES.includes(status);
+
+                    const isFinished =
+                      FINISHED_STATUSES.includes(status);
+
+                    const time = match.fixture.date
+                      ? new Date(
+                          match.fixture.date
+                        ).toLocaleTimeString("en-US", {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })
+                      : "--:--";
+
+                    return (
+                      <a
+                        key={match.fixture.id}
+                        href={`/matches/${match.fixture.id}`}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "70px 1fr 80px 34px",
+                          alignItems: "center",
+                          gap: 10,
+                          padding: "14px",
+                          textDecoration: "none",
+                          color: "#222",
+                          borderBottom:
+                            "1px solid #eee",
+                        }}
+                      >
+                        <div
+                          style={{
+                            textAlign: "center",
+                            fontSize: 13,
+                            color: isLive
+                              ? "#ea580c"
+                              : "#777",
+                            fontWeight: isLive
+                              ? 800
+                              : 600,
+                          }}
+                        >
+                          {isLive
+                            ? `${status}${
+                                match.fixture.status
+                                  .elapsed
+                                  ? ` ${match.fixture.status.elapsed}'`
+                                  : ""
+                              }`
+                            : isFinished
+                            ? status
+                            : time}
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 8,
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
+                          >
+                            {match.teams.home.logo && (
+                              <img
+                                src={
+                                  match.teams.home.logo
+                                }
+                                alt=""
+                                width={24}
+                                height={24}
+                                style={{
+                                  objectFit: "contain",
+                                }}
+                              />
+                            )}
+
+                            <span
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 600,
+                              }}
+                            >
+                              {match.teams.home.name}
+                            </span>
+                          </div>
+
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                            }}
+                          >
+                            {match.teams.away.logo && (
+                              <img
+                                src={
+                                  match.teams.away.logo
+                                }
+                                alt=""
+                                width={24}
+                                height={24}
+                                style={{
+                                  objectFit: "contain",
+                                }}
+                              />
+                            )}
+
+                            <span
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 600,
+                              }}
+                            >
+                              {match.teams.away.name}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            textAlign: "center",
+                            fontSize: 16,
+                            fontWeight: 800,
+                            lineHeight: 1.8,
+                          }}
+                        >
+                          <div>
+                            {match.goals.home ?? "-"}
+                          </div>
+
+                          <div>
+                            {match.goals.away ?? "-"}
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={(e) =>
+                            toggleFavorite(
+                              e,
+                              match.fixture.id
+                            )
+                          }
+                          style={{
+                            border: "none",
+                            background: "transparent",
+                            fontSize: 20,
+                            cursor: "pointer",
+                            color: favorites.includes(
+                              match.fixture.id
+                            )
+                              ? "#f97316"
+                              : "#bbb",
+                          }}
+                        >
+                          ★
+                        </button>
+                      </a>
+                    );
+                  })}
+                </section>
+              );
+            })}
+          </div>
+        )}
       </div>
-    </a>
+    </main>
   );
 }

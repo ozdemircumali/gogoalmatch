@@ -13,23 +13,47 @@ export async function GET(
     );
   }
 
+  const headers = {
+    "x-apisports-key": apiKey,
+  };
+
   try {
-    const response = await fetch(
-      `https://v3.football.api-sports.io/fixtures?id=${params.id}`,
-      {
-        headers: {
-          "x-apisports-key": apiKey,
-        },
-        cache: "no-store",
-      }
-    );
+    const [fixtureRes, eventsRes, statisticsRes, lineupsRes] =
+      await Promise.all([
+        fetch(
+          `https://v3.football.api-sports.io/fixtures?id=${params.id}`,
+          { headers, cache: "no-store" }
+        ),
+        fetch(
+          `https://v3.football.api-sports.io/fixtures/events?fixture=${params.id}`,
+          { headers, cache: "no-store" }
+        ),
+        fetch(
+          `https://v3.football.api-sports.io/fixtures/statistics?fixture=${params.id}`,
+          { headers, cache: "no-store" }
+        ),
+        fetch(
+          `https://v3.football.api-sports.io/fixtures/lineups?fixture=${params.id}`,
+          { headers, cache: "no-store" }
+        ),
+      ]);
 
-    const data = await response.json();
+    const fixture = await fixtureRes.json();
+    const events = await eventsRes.json();
+    const statistics = await statisticsRes.json();
+    const lineups = await lineupsRes.json();
 
-    return NextResponse.json(data);
-  } catch {
+    return NextResponse.json({
+      fixture: fixture.response?.[0] || null,
+      events: events.response || [],
+      statistics: statistics.response || [],
+      lineups: lineups.response || [],
+    });
+  } catch (error) {
+    console.error(error);
+
     return NextResponse.json(
-      { error: "Failed to fetch fixture details" },
+      { error: "Failed to fetch match details" },
       { status: 500 }
     );
   }

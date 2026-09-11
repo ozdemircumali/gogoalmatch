@@ -1,17 +1,13 @@
 import { NextResponse } from "next/server";
 
-type Params = {
-  params: {
-    id: string;
-  };
-};
+const API_BASE = "https://v3.football.api-sports.io";
 
 export async function GET(
   request: Request,
-  { params }: Params
+  context: { params: { id: string } }
 ) {
   const apiKey = process.env.API_FOOTBALL_KEY;
-  const fixtureId = params.id;
+  const id = context.params.id;
 
   if (!apiKey) {
     return NextResponse.json(
@@ -23,55 +19,49 @@ export async function GET(
     );
   }
 
-  if (!fixtureId || !/^\d+$/.test(fixtureId)) {
+  if (!/^\d+$/.test(id)) {
     return NextResponse.json(
       {
         success: false,
-        error: "Invalid fixture ID",
+        error: "Invalid match ID",
       },
       { status: 400 }
     );
   }
 
-  const baseUrl = "https://v3.football.api-sports.io";
-
   const headers = {
     "x-apisports-key": apiKey,
   };
 
-  async function fetchApi(endpoint: string) {
-    const response = await fetch(`${baseUrl}${endpoint}`, {
+  async function getData(path: string) {
+    const response = await fetch(`${API_BASE}${path}`, {
+      method: "GET",
       headers,
       cache: "no-store",
     });
 
     if (!response.ok) {
       throw new Error(
-        `API-Football request failed: ${response.status}`
+        `API-Football returned ${response.status} for ${path}`
       );
     }
 
-    const data = await response.json();
+    const json = await response.json();
 
-    return data?.response ?? [];
+    return json?.response ?? [];
   }
 
   try {
-    const [
-      fixtureData,
-      events,
-      statistics,
-      lineups,
-      players,
-    ] = await Promise.all([
-      fetchApi(`/fixtures?id=${fixtureId}`),
-      fetchApi(`/fixtures/events?fixture=${fixtureId}`),
-      fetchApi(`/fixtures/statistics?fixture=${fixtureId}`),
-      fetchApi(`/fixtures/lineups?fixture=${fixtureId}`),
-      fetchApi(`/fixtures/players?fixture=${fixtureId}`),
-    ]);
+    const [fixtureResponse, events, statistics, lineups, players] =
+      await Promise.all([
+        getData(`/fixtures?id=${id}`),
+        getData(`/fixtures/events?fixture=${id}`),
+        getData(`/fixtures/statistics?fixture=${id}`),
+        getData(`/fixtures/lineups?fixture=${id}`),
+        getData(`/fixtures/players?fixture=${id}`),
+      ]);
 
-    if (!fixtureData.length) {
+    if (!fixtureResponse.length) {
       return NextResponse.json(
         {
           success: false,
@@ -81,57 +71,54 @@ export async function GET(
       );
     }
 
-    const fixture = fixtureData[0];
+    const fixture = fixtureResponse[0];
 
     return NextResponse.json({
       success: true,
 
-      match: fixture,
-      fixture,
+      data: {
+        fixture,
+        match: fixture,
 
-      teams: {
-        home: fixture.teams?.home ?? null,
-        away: fixture.teams?.away ?? null,
+        teams: {
+          home: fixture.teams?.home ?? null,
+          away: fixture.teams?.away ?? null,
+        },
+
+        league: fixture.league ?? null,
+
+        venue: fixture.fixture?.venue ?? null,
+
+        referee: fixture.fixture?.referee ?? null,
+
+        status: fixture.fixture?.status ?? null,
+
+        score: {
+          goals: fixture.goals ?? null,
+          halftime: fixture.score?.halftime ?? null,
+          fulltime: fixture.score?.fulltime ?? null,
+          extratime: fixture.score?.extratime ?? null,
+          penalty: fixture.score?.penalty ?? null,
+        },
+
+        events,
+        statistics,
+        lineups,
+        players,
       },
 
-      league: fixture.league ?? null,
-
-      venue: fixture.fixture?.venue ?? null,
-
-      referee: fixture.fixture?.referee ?? null,
-
-      status: fixture.fixture?.status ?? null,
-
-      score: fixture.goals ?? null,
-
-      halftime: fixture.score?.halftime ?? null,
-
-      fulltime: fixture.score?.fulltime ?? null,
-
-      extratime: fixture.score?.extratime ?? null,
-
-      penalty: fixture.score?.penalty ?? null,
-
-      events,
-
-      statistics,
-
-      lineups,
-
-      players,
-
       meta: {
-        fixtureId: Number(fixtureId),
-        fetchedAt: new Date().toISOString(),
+        matchId: Number(id),
+        updatedAt: new Date().toISOString(),
       },
     });
   } catch (error) {
-    console.error("Match center error:", error);
+    console.error("GoGoalMatch match center error:", error);
 
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to fetch match data",
+        error: "Unable to load match data",
       },
       { status: 500 }
     );

@@ -1,903 +1,326 @@
-import VisualLineup from "@/components/VisualLineup";
+"use client";
 
-interface MatchPageProps {
-  params: {
-    id: string;
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+
+type MatchDetail = {
+  fixture: {
+    id: number;
+    date: string;
+    status: {
+      long: string;
+      short: string;
+      elapsed: number | null;
+    };
   };
-}
+  league: {
+    name: string;
+    country: string;
+    logo: string;
+  };
+  teams: {
+    home: { id: number; name: string; logo: string; winner: boolean | null };
+    away: { id: number; name: string; logo: string; winner: boolean | null };
+  };
+  goals: {
+    home: number | null;
+    away: number | null;
+  };
+  score: {
+        halftime: { home: number | null; away: number | null };
+        fulltime: { home: number | null; away: number | null };
+  };
+  events?: Array<{
+    time: { elapsed: number; extra?: number };
+    team: { id: number; name: string };
+    player: { name: string };
+    assist?: { name: string };
+    type: string; // Goal, Card, subst
+    detail: string; // Normal Goal, Yellow Card, etc.
+  }>;
+  statistics?: Array<{
+    team: { id: number; name: string };
+    statistics: Array<{ type: string; value: number | string | null }>;
+  }>;
+  lineups?: Array<{
+    team: { id: number; name: string };
+    formation: string;
+    startXI: Array<{ player: { id: number; name: string; number: number; pos: string } }>;
+    substitutes: Array<{ player: { id: number; name: string; number: number; pos: string } }>;
+  }>;
+};
 
-async function getMatchData(id: string) {
-  try {
-    const res = await fetch(
-      `https://www.gogoalmatch.com/api/match-center/${id}`,
-      {
-        cache: "no-store",
+const LIVE_STATUSES = ["1H", "2H", "HT", "ET", "BT", "P"];
+const FINISHED_STATUSES = ["FT", "AET", "PEN"];
+
+type SubTab = "SUMMARY" | "STATS" | "LINEUPS";
+
+export default function MatchDetailPage() {
+  const params = useParams();
+  const id = params?.id;
+
+  const [match, setMatch] = useState<MatchDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<SubTab>("SUMMARY");
+
+  async function loadMatchDetail() {
+    if (!id) return;
+    try {
+      const response = await fetch(`/api/fixtures/${id}`, { cache: "no-store" });
+      const data = await response.json();
+      if (data.response && data.response.length > 0) {
+        setMatch(data.response[0]);
       }
-    );
-
-    if (!res.ok) return null;
-
-    const data = await res.json();
-
-    if (!data.success || !data.data) return null;
-
-    return data.data;
-  } catch {
-    return null;
+    } catch (error) {
+      console.error("Failed to load match detail:", error);
+    } finally {
+      setLoading(false);
+    }
   }
-}
 
-export default async function MatchDetailPage({
-  params,
-}: MatchPageProps) {
-  const data = await getMatchData(params.id);
+  useEffect(() => {
+    loadMatchDetail();
+    const interval = setInterval(loadMatchDetail, 30000); // Canlı akış için 30 sn'de bir güncelle
+    return () => clearInterval(interval);
+  }, [id]);
 
-  if (!data) {
+  if (loading) {
     return (
-      <main
-        style={{
-          minHeight: "100vh",
-          background: "#07100c",
-          color: "white",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "20px",
-          fontFamily: "Arial, Helvetica, sans-serif",
-        }}
-      >
-        <div
-          style={{
-            background: "#0c1812",
-            border: "1px solid #1b3024",
-            padding: "40px",
-            borderRadius: "16px",
-            textAlign: "center",
-            maxWidth: "450px",
-            width: "100%",
-          }}
-        >
-          <h1 style={{ marginTop: 0 }}>
-            Match Not Found
-          </h1>
-
-          <p style={{ color: "#8fa097" }}>
-            We couldn't load the match information.
-          </p>
-
-          <a
-            href="/"
-            style={{
-              display: "inline-block",
-              marginTop: "15px",
-              background: "#55e58b",
-              color: "#07100c",
-              padding: "11px 20px",
-              borderRadius: "8px",
-              textDecoration: "none",
-              fontWeight: 800,
-            }}
-          >
-            Back to Matches
-          </a>
+      <div className="min-h-screen bg-[#0d0f12] text-slate-100 flex items-center justify-center font-sans">
+        <div className="bg-[#12161c] border border-slate-800 p-8 rounded-2xl text-center shadow-2xl animate-pulse text-xs text-slate-400">
+          Maç detayları yükleniyor...
         </div>
-      </main>
+      </div>
     );
   }
 
-  const {
-    fixture,
-    teams,
-    goals,
-    league,
-    venue,
-    referee,
-    status,
-    score,
-    events,
-    statistics,
-    lineups,
-    players,
-  } = data;
+  if (!match) {
+    return (
+      <div className="min-h-screen bg-[#0d0f12] text-slate-100 flex flex-col items-center justify-center font-sans gap-4">
+        <div className="text-slate-400 text-sm">Maç bilgisi bulunamadı veya silinmiş.</div>
+        <Link href="/" className="px-4 py-2 bg-orange-600 text-white rounded-xl text-xs font-bold">
+          Ana Sayfaya Dön
+        </Link>
+      </div>
+    );
+  }
 
-  const isLive = [
-    "1H",
-    "2H",
-    "HT",
-    "ET",
-    "BT",
-    "P",
-  ].includes(status?.short);
-
-  const homeScore =
-    goals?.home ??
-    score?.goals?.home ??
-    0;
-
-  const awayScore =
-    goals?.away ??
-    score?.goals?.away ??
-    0;
-
-  // VisualLineup için mock / API verisi hazırlığı
-  const homeLineupData = {
-    name: teams?.home?.name || "Home Team",
-    formation: lineups?.[0]?.formation || "4-2-3-1",
-    logo: teams?.home?.logo,
-    players: lineups?.[0]?.startXI?.map((item: any, i: number) => ({
-      id: item.player?.id || i,
-      number: item.player?.number || i + 1,
-      name: item.player?.name || "Player",
-      position: item.player?.pos || "MF",
-      x: 20 + ((i % 4) * 20),
-      y: 15 + Math.floor(i / 3) * 20,
-    })) || [
-      { id: 1, number: 1, name: "Muslera", position: "GK", x: 50, y: 10, rating: 7.2 },
-      { id: 2, number: 23, name: "Ayhan", position: "DF", x: 15, y: 30, rating: 6.8 },
-      { id: 3, number: 6, name: "Davinson", position: "DF", x: 38, y: 25, rating: 7.5 },
-      { id: 4, number: 42, name: "Bardakcı", position: "DF", x: 62, y: 25, rating: 7.1 },
-      { id: 5, number: 18, name: "Jakobs", position: "DF", x: 85, y: 30, rating: 6.9 },
-      { id: 6, number: 34, name: "Torreira", position: "MF", x: 35, y: 55, rating: 7.8 },
-      { id: 7, number: 8, name: "Sara", position: "MF", x: 65, y: 55, rating: 8.2 },
-      { id: 8, number: 53, name: "Barış", position: "FW", x: 20, y: 75, rating: 7.0 },
-      { id: 9, number: 10, name: "Mertens", position: "FW", x: 50, y: 72, rating: 7.6 },
-      { id: 10, number: 11, name: "Yunus", position: "FW", x: 80, y: 75, rating: 7.4 },
-      { id: 11, number: 9, name: "Icardi", position: "FW", x: 50, y: 90, rating: 8.5 },
-    ]
-  };
-
-  const awayLineupData = {
-    name: teams?.away?.name || "Away Team",
-    formation: lineups?.[1]?.formation || "4-3-3",
-    logo: teams?.away?.logo,
-    players: lineups?.[1]?.startXI?.map((item: any, i: number) => ({
-      id: item.player?.id || i + 100,
-      number: item.player?.number || i + 1,
-      name: item.player?.name || "Player",
-      position: item.player?.pos || "MF",
-      x: 20 + ((i % 4) * 20),
-      y: 15 + Math.floor(i / 3) * 20,
-    })) || [
-      { id: 12, number: 40, name: "Livadovıć", position: "GK", x: 50, y: 90, rating: 6.7 },
-      { id: 13, number: 16, name: "Müldür", position: "DF", x: 85, y: 70, rating: 6.5 },
-      { id: 14, number: 50, name: "Becão", position: "DF", x: 62, y: 75, rating: 6.9 },
-      { id: 15, number: 6, name: "Djiku", position: "DF", x: 38, y: 75, rating: 7.1 },
-      { id: 16, number: 24, name: "Oosterwolde", position: "DF", x: 15, y: 70, rating: 6.8 },
-      { id: 17, number: 34, name: "Amrabat", position: "MF", x: 50, y: 52, rating: 7.0 },
-      { id: 18, number: 8, name: "Yandaş", position: "MF", x: 30, y: 40, rating: 6.4 },
-      { id: 19, number: 53, name: "Szymański", position: "MF", x: 70, y: 40, rating: 7.2 },
-      { id: 20, number: 10, name: "Tadić", position: "FW", x: 15, y: 20, rating: 7.3 },
-      { id: 21, number: 19, name: "En-Nesyri", position: "FW", x: 50, y: 15, rating: 6.6 },
-      { id: 22, number: 97, name: "Maximin", position: "FW", x: 85, y: 20, rating: 7.1 },
-    ]
-  };
+  const isLive = LIVE_STATUSES.includes(match.fixture.status.short);
+  const isFinished = FINISHED_STATUSES.includes(match.fixture.status.short);
+  const statusText = isLive
+    ? match.fixture.status.elapsed != null
+      ? `${match.fixture.status.elapsed}'`
+      : match.fixture.status.short
+    : isFinished
+    ? "MS"
+    : new Date(match.fixture.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   return (
-    <>
-      <style>{`
-        * {
-          box-sizing: border-box;
-        }
-
-        body {
-          margin: 0;
-          background: #07100c;
-          color: #ffffff;
-          font-family: Arial, Helvetica, sans-serif;
-        }
-
-        a {
-          color: inherit;
-        }
-
-        .topbar {
-          height: 64px;
-          background: #0b1711;
-          border-bottom: 1px solid #1b3024;
-          display: flex;
-          align-items: center;
-          padding: 0 24px;
-        }
-
-        .topbar-inner {
-          width: 100%;
-          max-width: 1200px;
-          margin: auto;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-
-        .logo {
-          color: #55e58b;
-          text-decoration: none;
-          font-size: 22px;
-          font-weight: 900;
-        }
-
-        .back {
-          color: #aebdb4;
-          text-decoration: none;
-          font-size: 14px;
-          font-weight: 700;
-        }
-
-        .back:hover {
-          color: #55e58b;
-        }
-
-        .container {
-          max-width: 1100px;
-          margin: 0 auto;
-          padding: 20px;
-        }
-
-        .league-card {
-          background: #0c1812;
-          border: 1px solid #1b3024;
-          border-radius: 12px 12px 0 0;
-          padding: 15px 20px;
-          text-align: center;
-        }
-
-        .league-name {
-          font-size: 16px;
-          font-weight: 800;
-        }
-
-        .league-info {
-          color: #71847a;
-          font-size: 12px;
-          margin-top: 5px;
-        }
-
-        .score-card {
-          background: linear-gradient(
-            135deg,
-            #10271a,
-            #0b1711
-          );
-          border: 1px solid #1b3024;
-          border-top: 0;
-          border-radius: 0 0 12px 12px;
-          padding: 35px 20px;
-        }
-
-        .teams {
-          display: grid;
-          grid-template-columns: 1fr 180px 1fr;
-          align-items: center;
-          gap: 20px;
-        }
-
-        .team {
-          text-align: center;
-        }
-
-        .team-logo {
-          width: 85px;
-          height: 85px;
-          object-fit: contain;
-        }
-
-        .team-name {
-          margin-top: 12px;
-          font-size: 17px;
-          font-weight: 800;
-        }
-
-        .score {
-          text-align: center;
-        }
-
-        .score-number {
-          font-size: 44px;
-          font-weight: 900;
-        }
-
-        .status {
-          display: inline-block;
-          margin-top: 10px;
-          padding: 5px 12px;
-          border-radius: 20px;
-          background: #27372d;
-          color: #d9e5de;
-          font-size: 11px;
-          font-weight: 800;
-        }
-
-        .status.live {
-          background: #55e58b;
-          color: #07100c;
-        }
-
-        .tabs {
-          display: flex;
-          gap: 5px;
-          overflow-x: auto;
-          background: #0c1812;
-          border: 1px solid #1b3024;
-          margin-top: 15px;
-          padding: 6px;
-          border-radius: 10px;
-        }
-
-        .tab {
-          padding: 10px 16px;
-          border-radius: 7px;
-          color: #9cacA3;
-          font-size: 12px;
-          font-weight: 700;
-          white-space: nowrap;
-        }
-
-        .tab.active {
-          background: #173021;
-          color: #55e58b;
-        }
-
-        .card {
-          margin-top: 15px;
-          background: #0c1812;
-          border: 1px solid #1b3024;
-          border-radius: 12px;
-          padding: 20px;
-        }
-
-        .card h2 {
-          margin: 0 0 18px;
-          font-size: 16px;
-        }
-
-        .empty {
-          color: #71847a;
-          font-size: 13px;
-        }
-
-        .event {
-          display: grid;
-          grid-template-columns: 1fr 80px 1fr;
-          align-items: center;
-          min-height: 60px;
-          border-bottom: 1px solid #17281e;
-        }
-
-        .event:last-child {
-          border-bottom: 0;
-        }
-
-        .event-home {
-          text-align: right;
-          padding-right: 15px;
-          font-size: 13px;
-        }
-
-        .event-away {
-          text-align: left;
-          padding-left: 15px;
-          font-size: 13px;
-        }
-
-        .event-center {
-          text-align: center;
-        }
-
-        .event-time {
-          color: #71847a;
-          font-size: 11px;
-        }
-
-        .event-icon {
-          margin-top: 4px;
-          font-size: 18px;
-        }
-
-        .stat-row {
-          display: grid;
-          grid-template-columns: 70px 1fr 70px;
-          gap: 15px;
-          align-items: center;
-          margin-bottom: 14px;
-        }
-
-        .stat-value {
-          font-size: 13px;
-          font-weight: 800;
-        }
-
-        .stat-name {
-          text-align: center;
-          color: #91a098;
-          font-size: 12px;
-        }
-
-        .info-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 10px;
-        }
-
-        .info {
-          background: #09130e;
-          border: 1px solid #17281e;
-          border-radius: 8px;
-          padding: 13px;
-        }
-
-        .info-label {
-          color: #71847a;
-          font-size: 10px;
-          text-transform: uppercase;
-          font-weight: 700;
-          margin-bottom: 5px;
-        }
-
-        .info-value {
-          font-size: 13px;
-          font-weight: 700;
-        }
-
-        .lineup-team {
-          margin-bottom: 20px;
-        }
-
-        .lineup-team:last-child {
-          margin-bottom: 0;
-        }
-
-        .lineup-title {
-          font-size: 14px;
-          font-weight: 800;
-          margin-bottom: 10px;
-        }
-
-        .player {
-          display: flex;
-          justify-content: space-between;
-          padding: 9px 0;
-          border-bottom: 1px solid #17281e;
-          font-size: 12px;
-        }
-
-        @media (max-width: 700px) {
-          .container {
-            padding: 10px;
-          }
-
-          .teams {
-            grid-template-columns: 1fr 110px 1fr;
-            gap: 8px;
-          }
-
-          .team-logo {
-            width: 60px;
-            height: 60px;
-          }
-
-          .team-name {
-            font-size: 13px;
-          }
-
-          .score-number {
-            font-size: 32px;
-          }
-
-          .info-grid {
-            grid-template-columns: 1fr 1fr;
-          }
-        }
-
-        @media (max-width: 450px) {
-          .info-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .teams {
-            grid-template-columns: 1fr 90px 1fr;
-          }
-
-          .team-name {
-            font-size: 12px;
-          }
-
-          .score-number {
-            font-size: 28px;
-          }
-        }
-      `}</style>
-
-      <header className="topbar">
-        <div className="topbar-inner">
-          <a href="/" className="logo">
-            GoGoalMatch
-          </a>
-
-          <a href="/" className="back">
-            ← Matches
-          </a>
+    <main className="min-h-screen bg-[#0d0f12] text-slate-100 font-sans selection:bg-orange-500 selection:text-white pb-12">
+      {/* Üst Header / Geri Dönüş */}
+      <header className="sticky top-0 z-50 bg-[#12161c]/95 backdrop-blur-md border-b border-orange-500/20 shadow-lg">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-orange-400 transition-colors bg-[#181d26] border border-slate-800 px-3 py-1.5 rounded-xl"
+          >
+            ← Maçlara Dön
+          </Link>
+          <div className="flex items-center gap-2">
+            {match.league.logo && <img src={match.league.logo} alt="" className="w-4 h-4 object-contain" />}
+            <span className="text-xs font-black text-white truncate max-w-[200px]">{match.league.name}</span>
+          </div>
         </div>
       </header>
 
-      <main className="container">
-
-        <div className="league-card">
-          <div className="league-name">
-            {league?.name || "Football"}
-          </div>
-
-          <div className="league-info">
-            {league?.country || ""}
-            {venue?.name
-              ? ` · ${venue.name}`
-              : ""}
-          </div>
-        </div>
-
-        <div className="score-card">
-          <div className="teams">
-
-            <div className="team">
-              {teams?.home?.logo && (
-                <img
-                  className="team-logo"
-                  src={teams.home.logo}
-                  alt={teams.home.name}
-                />
-              )}
-
-              <div className="team-name">
-                {teams?.home?.name}
-              </div>
+      <div className="max-w-3xl mx-auto px-4 pt-6 space-y-4">
+        {/* Skorboard Kartı */}
+        <div className="bg-[#12161c] border border-slate-800/80 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-600 via-amber-500 to-orange-600" />
+          
+          <div className="flex items-center justify-between gap-4">
+            {/* Ev Sahibi */}
+            <div className="flex-1 flex flex-col items-center text-center gap-2.5">
+              <img src={match.teams.home.logo} alt="" className="w-14 h-14 object-contain drop-shadow-md" />
+              <span className="text-sm font-black text-white leading-tight">{match.teams.home.name}</span>
             </div>
 
-            <div className="score">
-              <div className="score-number">
-                {homeScore} - {awayScore}
-              </div>
-
-              <div
-                className={`status ${
-                  isLive ? "live" : ""
-                }`}
-              >
-                {status?.elapsed != null
-                  ? `${status.elapsed}'`
-                  : status?.long || "Scheduled"}
-              </div>
-            </div>
-
-            <div className="team">
-              {teams?.away?.logo && (
-                <img
-                  className="team-logo"
-                  src={teams.away.logo}
-                  alt={teams.away.name}
-                />
-              )}
-
-              <div className="team-name">
-                {teams?.away?.name}
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <div className="tabs">
-          <div className="tab active">Overview</div>
-          <div className="tab">Events</div>
-          <div className="tab">Statistics</div>
-          <div className="tab">Lineups</div>
-          <div className="tab">Players</div>
-        </div>
-
-        <section className="card">
-          <h2>Match Events</h2>
-
-          {!events || events.length === 0 ? (
-            <div className="empty">
-              No events available
-            </div>
-          ) : (
-            events.map(
-              (event: any, index: number) => {
-                const isHome =
-                  event.team?.id === teams?.home?.id;
-
-                return (
-                  <div
-                    className="event"
-                    key={index}
-                  >
-                    <div className="event-home">
-                      {isHome &&
-                        event.player?.name}
-                    </div>
-
-                    <div className="event-center">
-                      <div className="event-time">
-                        {event.time?.elapsed
-                          ? `${event.time.elapsed}'`
-                          : ""}
-                      </div>
-
-                      <div className="event-icon">
-                        {getEventIcon(
-                          event.type,
-                          event.detail
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="event-away">
-                      {!isHome &&
-                        event.player?.name}
-                    </div>
+            {/* Skor ve Durum */}
+            <div className="px-6 text-center">
+              {!isLive && !isFinished ? (
+                <div className="text-lg font-black text-orange-400 bg-orange-500/10 border border-orange-500/30 px-3 py-1.5 rounded-xl tracking-wider">
+                  {statusText}
+                </div>
+              ) : (
+                <div>
+                  <div className="text-3xl font-black text-white tracking-widest">
+                    {match.goals.home ?? 0} - {match.goals.away ?? 0}
                   </div>
-                );
-              }
-            )
-          )}
-        </section>
-
-        <section className="card">
-          <h2>Statistics</h2>
-
-          {!statistics ||
-          statistics.length === 0 ? (
-            <div className="empty">
-              No statistics available
-            </div>
-          ) : (
-            statistics.map(
-              (teamStats: any, index: number) => (
-                <div key={index}>
-                  {teamStats.statistics?.map(
-                    (
-                      stat: any,
-                      statIndex: number
-                    ) => {
-                      const value =
-                        typeof stat.value ===
-                        "string"
-                          ? stat.value
-                          : stat.value ?? "-";
-
-                      return (
-                        <div
-                          className="stat-row"
-                          key={statIndex}
-                        >
-                          <div className="stat-value">
-                            {index === 0
-                              ? value
-                              : ""}
-                          </div>
-
-                          <div>
-                            <div className="stat-name">
-                              {stat.type}
-                            </div>
-                          </div>
-
-                          <div
-                            className="stat-value"
-                            style={{
-                              textAlign: "right",
-                            }}
-                          >
-                            {index === 1
-                              ? value
-                              : ""}
-                          </div>
-                        </div>
-                      );
-                    }
+                  <div className={`text-[10px] font-black uppercase tracking-widest mt-1 ${isLive ? "text-orange-500 animate-pulse" : "text-slate-400"}`}>
+                    {statusText}
+                  </div>
+                  {match.score.halftime.home != null && (
+                    <div className="text-[10px] text-slate-500 mt-1">
+                      (İY: {match.score.halftime.home} - {match.score.halftime.away})
+                    </div>
                   )}
                 </div>
-              )
-            )
-          )}
-        </section>
-
-        <section className="card">
-          <h2>Match Information</h2>
-
-          <div className="info-grid">
-
-            <div className="info">
-              <div className="info-label">
-                Status
-              </div>
-              <div className="info-value">
-                {status?.long || "-"}
-              </div>
+              )}
             </div>
 
-            <div className="info">
-              <div className="info-label">
-                League
-              </div>
-              <div className="info-value">
-                {league?.name || "-"}
-              </div>
+            {/* Deplasman */}
+            <div className="flex-1 flex flex-col items-center text-center gap-2.5">
+              <img src={match.teams.away.logo} alt="" className="w-14 h-14 object-contain drop-shadow-md" />
+              <span className="text-sm font-black text-white leading-tight">{match.teams.away.name}</span>
             </div>
-
-            <div className="info">
-              <div className="info-label">
-                Country
-              </div>
-              <div className="info-value">
-                {league?.country || "-"}
-              </div>
-            </div>
-
-            <div className="info">
-              <div className="info-label">
-                Venue
-              </div>
-              <div className="info-value">
-                {venue?.name || "-"}
-              </div>
-            </div>
-
-            <div className="info">
-              <div className="info-label">
-                Referee
-              </div>
-              <div className="info-value">
-                {referee || "-"}
-              </div>
-            </div>
-
-            <div className="info">
-              <div className="info-label">
-                Match ID
-              </div>
-              <div className="info-value">
-                {fixture?.id || params.id}
-              </div>
-            </div>
-
           </div>
-        </section>
+        </div>
 
-        {/* GÖRSEL SAHA KADRO BİLEŞENİ */}
-        <section className="card">
-          <h2>Visual Lineups</h2>
-          <VisualLineup 
-            homeTeam={homeLineupData} 
-            awayTeam={awayLineupData} 
-          />
-        </section>
+        {/* Alt Sekmeler (Özet, İstatistik, Kadrolar) */}
+        <div className="flex gap-2 border-b border-slate-800 pb-3">
+          <SubTabButton active={activeTab === "SUMMARY"} onClick={() => setActiveTab("SUMMARY")}>
+            Anlatım & Özet
+          </SubTabButton>
+          <SubTabButton active={activeTab === "STATS"} onClick={() => setActiveTab("STATS")}>
+            İstatistikler
+          </SubTabButton>
+          <SubTabButton active={activeTab === "LINEUPS"} onClick={() => setActiveTab("LINEUPS")}>
+            İlk 11'ler
+          </SubTabButton>
+        </div>
 
-        <section className="card">
-          <h2>Lineups List</h2>
-
-          {!lineups ||
-          lineups.length === 0 ? (
-            <div className="empty">
-              Lineups are not available yet.
-            </div>
-          ) : (
-            lineups.map(
-              (teamLineup: any, index: number) => (
-                <div
-                  className="lineup-team"
-                  key={index}
-                >
-                  <div className="lineup-title">
-                    {teamLineup.team?.name}
-                  </div>
-
-                  {teamLineup.startXI?.map(
-                    (player: any, playerIndex: number) => (
-                      <div
-                        className="player"
-                        key={playerIndex}
-                      >
-                        <span>
-                          {player.player?.number ?? ""}
-                          {" "}
-                          {player.player?.name ?? "-"}
-                        </span>
-
-                        <span>
-                          {player.player?.pos ?? ""}
-                        </span>
-                      </div>
-                    )
-                  )}
-                </div>
-              )
-            )
-          )}
-        </section>
-
-        <section className="card">
-          <h2>Players</h2>
-
-          {!players ||
-          players.length === 0 ? (
-            <div className="empty">
-              Player statistics are not available.
-            </div>
-          ) : (
-            players.map(
-              (teamPlayers: any, index: number) => (
-                <div
-                  className="lineup-team"
-                  key={index}
-                >
-                  <div className="lineup-title">
-                    {teamPlayers.team?.name}
-                  </div>
-
-                  {teamPlayers.players
-                    ?.slice(0, 20)
-                    .map(
-                      (
-                        playerData: any,
-                        playerIndex: number
-                      ) => (
-                        <div
-                          className="player"
-                          key={playerIndex}
-                        >
-                          <span>
-                            {playerData.player?.name ||
-                              "-"}
-                          </span>
-
-                          <span>
-                            {playerData.statistics?.[0]
-                              ?.games?.minutes
-                              ? `${playerData.statistics[0].games.minutes}'`
-                              : ""}
-                          </span>
-                        </div>
-                      )
-                    )}
-                </div>
-              )
-            )
-          )}
-        </section>
-
-      </main>
-    </>
+        {/* Sekme İçerikleri */}
+        <div className="bg-[#12161c] border border-slate-800/80 rounded-2xl p-5 shadow-xl min-h-[300px]">
+          {activeTab === "SUMMARY" && <MatchSummary events={match.events || []} homeId={match.teams.home.id} />}
+          {activeTab === "STATS" && <MatchStatistics statistics={match.statistics || []} />}
+          {activeTab === "LINEUPS" && <MatchLineups lineups={match.lineups || []} homeId={match.teams.home.id} />}
+        </div>
+      </div>
+    </main>
   );
 }
 
-function getEventIcon(
-  type: string,
-  detail: string
-) {
-  if (type === "Goal") {
-    return "⚽";
+function SubTabButton({ active, children, onClick }: { active: boolean; children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-4 py-2 rounded-xl text-xs font-extrabold tracking-wider transition-all ${
+        active
+          ? "bg-orange-600 text-white shadow-md shadow-orange-600/30 border border-orange-500"
+          : "bg-[#181d26] text-slate-400 border border-slate-800 hover:text-white hover:border-slate-700"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+// 1. Maç Olayları / Zaman Çizelgesi
+function MatchSummary({ events, homeId }: { events: MatchDetail["events"]; homeId: number }) {
+  if (!events || events.length === 0) {
+    return <div className="text-center text-slate-500 text-xs py-12">Bu maç için henüz olay verisi bulunmuyor.</div>;
   }
 
-  if (
-    type === "Card" &&
-    detail === "Yellow Card"
-  ) {
-    return "🟨";
+  return (
+    <div className="space-y-3">
+      {events.map((event, index) => {
+        const isHome = event.team.id === homeId;
+        const isGoal = event.type === "goal";
+        const isCard = event.type === "card";
+
+        return (
+          <div key={index} className={`flex items-center gap-3 ${isHome ? "flex-row" : "flex-row-reverse text-right"}`}>
+            <div className="w-10 text-center font-black text-xs text-orange-400 bg-orange-500/10 border border-orange-500/20 py-1 rounded-lg">
+              {event.time.elapsed}'
+            </div>
+            <div className={`flex items-center gap-2 flex-1 bg-[#181d26] border border-slate-800/80 px-4 py-2.5 rounded-xl ${isHome ? "" : "flex-row-reverse"}`}>
+              <span className="text-base">{isGoal ? "⚽" : isCard ? (event.detail.includes("Red") ? "🟥" : "🟨") : "🔄"}</span>
+              <div>
+                <div className="text-xs font-bold text-white">{event.player.name}</div>
+                {event.assist && <div className="text-[10px] text-slate-400">Asist: {event.assist.name}</div>}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// 2. İstatistikler
+function MatchStatistics({ statistics }: { statistics: MatchDetail["statistics"] }) {
+  if (!statistics || statistics.length < 2) {
+    return <div className="text-center text-slate-500 text-xs py-12">İstatistik verisi bulunmuyor.</div>;
   }
 
-  if (
-    type === "Card" &&
-    detail === "Red Card"
-  ) {
-    return "🟥";
+  const homeStats = statistics[0].statistics;
+  const awayStats = statistics[1].statistics;
+
+  return (
+    <div className="space-y-4">
+      {homeStats.map((item, idx) => {
+        const awayItem = awayStats[idx];
+        const homeVal = Number(item.value) || 0;
+        const awayVal = Number(awayItem?.value) || 0;
+        const total = homeVal + awayVal === 0 ? 1 : homeVal + awayVal;
+        const homePercent = Math.round((homeVal / total) * 100);
+
+        return (
+          <div key={idx} className="space-y-1">
+            <div className="flex justify-between text-xs font-bold">
+              <span className="text-white">{item.value ?? 0}</span>
+              <span className="text-slate-400 text-[11px] uppercase tracking-wider">{item.type}</span>
+              <span className="text-white">{awayItem?.value ?? 0}</span>
+            </div>
+            <div className="flex h-2 bg-slate-800 rounded-full overflow-hidden gap-1">
+              <div className="bg-orange-500 transition-all duration-500 rounded-l-full" style={{ width: `${homePercent}%` }} />
+              <div className="bg-slate-600 transition-all duration-500 rounded-r-full flex-1" />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// 3. İlk 11'ler
+function MatchLineups({ lineups, homeId }: { lineups: MatchDetail["lineups"]; homeId: number }) {
+  if (!lineups || lineups.length === 0) {
+    return <div className="text-center text-slate-500 text-xs py-12">Kadro verileri henüz açıklanmadı.</div>;
   }
 
-  if (type === "subst") {
-    return "↔";
-  }
+  const homeLineup = lineups.find((l) => l.team.id === homeId) || lineups[0];
+  const awayLineup = lineups.find((l) => l.team.id !== homeId) || lineups[1];
 
-  if (type === "Var") {
-    return "VAR";
-  }
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <TeamLineupBox title="Ev Sahibi İlk 11" lineup={homeLineup} />
+      <TeamLineupBox title="Deplasman İlk 11" lineup={awayLineup} />
+    </div>
+  );
+}
 
-  return "•";
+function TeamLineupBox({ title, lineup }: { title: string; lineup: any }) {
+  if (!lineup) return <div className="text-slate-500 text-xs">Kadro yok</div>;
+
+  return (
+    <div className="bg-[#181d26] border border-slate-800 rounded-xl p-4 space-y-3">
+      <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+        <span className="text-xs font-black text-orange-400 uppercase tracking-wider">{title}</span>
+        <span className="text-[10px] font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded">Diziliş: {lineup.formation}</span>
+      </div>
+      <div className="space-y-1.5">
+        {lineup.startXI?.map((item: any, idx: number) => (
+          <div key={idx} className="flex items-center gap-3 text-xs">
+            <span className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-[10px] text-orange-400">
+              {item.player.number}
+            </span>
+            <span className="text-slate-200 font-medium">{item.player.name}</span>
+            <span className="text-[9px] text-slate-500 ml-auto">{item.player.pos}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }

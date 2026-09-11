@@ -32,20 +32,8 @@ type Match = {
   };
 };
 
-const LIVE_STATUSES = [
-  "1H",
-  "2H",
-  "HT",
-  "ET",
-  "BT",
-  "P",
-];
-
-const FINISHED_STATUSES = [
-  "FT",
-  "AET",
-  "PEN",
-];
+const LIVE_STATUSES = ["1H", "2H", "HT", "ET", "BT", "P"];
+const FINISHED_STATUSES = ["FT", "AET", "PEN"];
 
 export default function Home() {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -105,7 +93,6 @@ export default function Home() {
           "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
       }}
     >
-      {/* HEADER */}
       <header
         className="ggm-header"
         style={{
@@ -233,7 +220,6 @@ export default function Home() {
           </div>
         ) : (
           <>
-            {/* LIVE */}
             <MatchSection
               title="LIVE MATCHES"
               subtitle="Matches currently being played"
@@ -242,7 +228,6 @@ export default function Home() {
               emptyText="There are no live matches right now."
             />
 
-            {/* UPCOMING */}
             <MatchSection
               title="TODAY'S MATCHES"
               subtitle="Upcoming matches today"
@@ -251,7 +236,6 @@ export default function Home() {
               emptyText="There are no upcoming matches."
             />
 
-            {/* RESULTS */}
             <MatchSection
               title="RESULTS"
               subtitle="Finished matches today"
@@ -290,18 +274,22 @@ export default function Home() {
           border-radius: 20px;
           transition: background 0.15s ease, color 0.15s ease;
         }
+
         .ggm-nav-link:hover {
           color: #e5e7eb;
           background: rgba(148, 163, 184, 0.08);
         }
+
         .ggm-nav-link-active {
           color: #22c55e;
           background: rgba(34, 197, 94, 0.12);
         }
+
         .ggm-nav-link-active:hover {
           color: #22c55e;
           background: rgba(34, 197, 94, 0.18);
         }
+
         .ggm-live-dot {
           width: 7px;
           height: 7px;
@@ -311,34 +299,44 @@ export default function Home() {
           box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
           animation: ggm-pulse 1.6s infinite;
         }
+
         @keyframes ggm-pulse {
           0% {
             box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
           }
+
           70% {
             box-shadow: 0 0 0 7px rgba(34, 197, 94, 0);
           }
+
           100% {
             box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
           }
         }
+
         .ggm-card {
-          transition: transform 0.15s ease, border-color 0.15s ease,
+          transition:
+            transform 0.15s ease,
+            border-color 0.15s ease,
             box-shadow 0.15s ease;
         }
+
         .ggm-card:hover {
           transform: translateY(-2px);
           border-color: rgba(34, 197, 94, 0.4) !important;
           box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
         }
+
         @media (max-width: 640px) {
           .ggm-team-name {
             font-size: 12px !important;
           }
+
           .ggm-team-logo {
             width: 26px !important;
             height: 26px !important;
           }
+
           .ggm-score {
             font-size: 18px !important;
           }
@@ -477,7 +475,7 @@ function MatchCard({
         : match.fixture.status.short;
 
   return (
-    
+    <a
       href={`/matches/${match.fixture.id}`}
       className="ggm-card"
       style={{
@@ -490,7 +488,6 @@ function MatchCard({
         overflow: "hidden",
       }}
     >
-      {/* LEAGUE */}
       <div
         style={{
           background: "rgba(255,255,255,0.02)",
@@ -565,7 +562,6 @@ function MatchCard({
         )}
       </div>
 
-      {/* TEAMS */}
       <div
         style={{
           display: "grid",
@@ -613,8 +609,7 @@ function MatchCard({
             style={{
               fontSize: "20px",
               fontWeight: 900,
-              color:
-                type === "upcoming" ? "#64748b" : "#f8fafc",
+              color: type === "upcoming" ? "#64748b" : "#f8fafc",
               letterSpacing: "-0.02em",
             }}
           >

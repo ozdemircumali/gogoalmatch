@@ -169,6 +169,7 @@ export default function Home() {
               </div>
             </div>
           </div>
+
           <nav
             style={{
               display: "flex",
@@ -197,7 +198,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* HERO BANNER */}
       <section
         style={{
           borderBottom: "1px solid #1e293b",
@@ -236,6 +236,7 @@ export default function Home() {
               <span className="ggm-live-dot" />
               REAL-TIME UPDATES
             </div>
+
             <h1
               style={{
                 margin: 0,
@@ -250,6 +251,7 @@ export default function Home() {
               <br />
               As it happens.
             </h1>
+
             <p
               style={{
                 marginTop: "10px",
@@ -291,7 +293,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* AD SLOT — TOP BANNER (placeholder, safe to leave empty) */}
       <div
         id="ad-slot-top"
         style={{
@@ -300,11 +301,7 @@ export default function Home() {
           padding: "0 20px",
         }}
       >
-        <div
-          style={{
-            minHeight: "0px",
-          }}
-        />
+        <div style={{ minHeight: "0px" }} />
       </div>
 
       <section
@@ -339,7 +336,6 @@ export default function Home() {
               emptyText="There are no live matches right now."
             />
 
-            {/* AD SLOT — MID CONTENT (placeholder, safe to leave empty) */}
             <div id="ad-slot-mid" style={{ margin: "20px 0" }}>
               <div style={{ minHeight: "0px" }} />
             </div>
@@ -351,6 +347,7 @@ export default function Home() {
               type="upcoming"
               emptyText="There are no upcoming matches."
             />
+
             <MatchSection
               title="RESULTS"
               subtitle="Finished matches today"
@@ -389,18 +386,22 @@ export default function Home() {
           border-radius: 20px;
           transition: background 0.15s ease, color 0.15s ease;
         }
+
         .ggm-nav-link:hover {
           color: #e5e7eb;
           background: rgba(148, 163, 184, 0.08);
         }
+
         .ggm-nav-link-active {
           color: #22c55e;
           background: rgba(34, 197, 94, 0.12);
         }
+
         .ggm-nav-link-active:hover {
           color: #22c55e;
           background: rgba(34, 197, 94, 0.18);
         }
+
         .ggm-live-dot {
           width: 7px;
           height: 7px;
@@ -410,6 +411,7 @@ export default function Home() {
           box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
           animation: ggm-pulse 1.6s infinite;
         }
+
         @keyframes ggm-pulse {
           0% {
             box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
@@ -421,6 +423,7 @@ export default function Home() {
             box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
           }
         }
+
         .ggm-league-group {
           background: #0f1626;
           border: 1px solid #1e293b;
@@ -428,26 +431,32 @@ export default function Home() {
           overflow: hidden;
           margin-bottom: 14px;
         }
+
         .ggm-row {
           display: block;
           text-decoration: none;
           color: #e5e7eb;
           transition: background 0.15s ease;
         }
+
         .ggm-row:hover {
           background: rgba(255, 255, 255, 0.035);
         }
+
         .ggm-row + .ggm-row {
           border-top: 1px solid #1e293b;
         }
+
         @media (max-width: 640px) {
           .ggm-team-name {
             font-size: 12px !important;
           }
+
           .ggm-team-logo {
             width: 24px !important;
             height: 24px !important;
           }
+
           .ggm-score {
             font-size: 16px !important;
           }
@@ -487,6 +496,7 @@ function HeroStat({
       >
         {value}
       </div>
+
       <div
         style={{
           marginTop: "5px",
@@ -520,7 +530,7 @@ function groupMatchesByLeague(
   league: Match["league"];
   matches: Match[];
 }[] {
-  const groups = new Map
+  const groups = new Map<
     string,
     {
       league: Match["league"];
@@ -532,6 +542,7 @@ function groupMatchesByLeague(
     const key = getLeagueKey(match.league);
 
     const existing = groups.get(key);
+
     if (existing) {
       existing.matches.push(match);
     } else {
@@ -589,6 +600,7 @@ function MatchSection({
             flexShrink: 0,
           }}
         />
+
         <div style={{ flex: 1 }}>
           <h2
             style={{
@@ -605,6 +617,7 @@ function MatchSection({
             {type === "live" && <span className="ggm-live-dot" />}
             {title}
           </h2>
+
           <div
             style={{
               marginTop: "3px",
@@ -615,6 +628,7 @@ function MatchSection({
             {subtitle}
           </div>
         </div>
+
         <div
           style={{
             background: "#0f1626",
@@ -629,6 +643,7 @@ function MatchSection({
           {matches.length} {matches.length === 1 ? "match" : "matches"}
         </div>
       </div>
+
       {matches.length === 0 ? (
         <div
           style={{
@@ -691,6 +706,7 @@ function LeagueGroup({
             }}
           />
         )}
+
         <div style={{ minWidth: 0 }}>
           <div
             style={{
@@ -704,6 +720,7 @@ function LeagueGroup({
           >
             {league.name}
           </div>
+
           <div
             style={{
               fontSize: "11px",
@@ -714,6 +731,7 @@ function LeagueGroup({
             {league.country}
           </div>
         </div>
+
         <div
           style={{
             marginLeft: "auto",
@@ -726,9 +744,14 @@ function LeagueGroup({
           {matches.length} {matches.length === 1 ? "match" : "matches"}
         </div>
       </div>
+
       <div>
         {matches.map((match) => (
-          <MatchRow key={match.fixture.id} match={match} type={type} />
+          <MatchRow
+            key={match.fixture.id}
+            match={match}
+            type={type}
+          />
         ))}
       </div>
     </div>
@@ -752,7 +775,13 @@ function formatKickoffTime(dateString?: string): string {
   });
 }
 
-function MatchRow({ match, type }: { match: Match; type: SectionType }) {
+function MatchRow({
+  match,
+  type,
+}: {
+  match: Match;
+  type: SectionType;
+}) {
   const statusText =
     type === "live"
       ? match.fixture.status.elapsed != null
@@ -763,7 +792,10 @@ function MatchRow({ match, type }: { match: Match; type: SectionType }) {
         : formatKickoffTime(match.fixture.date);
 
   return (
-    <a href={`/matches/${match.fixture.id}`} className="ggm-row">
+    <a
+      href={`/matches/${match.fixture.id}`}
+      className="ggm-row"
+    >
       <div
         style={{
           display: "grid",
@@ -795,6 +827,7 @@ function MatchRow({ match, type }: { match: Match; type: SectionType }) {
           >
             {match.teams.home.name}
           </strong>
+
           <img
             src={match.teams.home.logo}
             alt=""
@@ -807,6 +840,7 @@ function MatchRow({ match, type }: { match: Match; type: SectionType }) {
             }}
           />
         </div>
+
         <div style={{ textAlign: "center" }}>
           {type === "upcoming" ? (
             <div
@@ -831,13 +865,17 @@ function MatchRow({ match, type }: { match: Match; type: SectionType }) {
               >
                 {`${match.goals.home ?? 0} - ${match.goals.away ?? 0}`}
               </div>
+
               <div
                 style={{
                   marginTop: "3px",
                   fontSize: "10px",
                   fontWeight: 800,
                   letterSpacing: "0.03em",
-                  color: type === "live" ? "#ef4444" : "#64748b",
+                  color:
+                    type === "live"
+                      ? "#ef4444"
+                      : "#64748b",
                 }}
               >
                 {statusText}
@@ -845,6 +883,7 @@ function MatchRow({ match, type }: { match: Match; type: SectionType }) {
             </>
           )}
         </div>
+
         <div
           style={{
             display: "flex",
@@ -864,6 +903,7 @@ function MatchRow({ match, type }: { match: Match; type: SectionType }) {
               flexShrink: 0,
             }}
           />
+
           <strong
             className="ggm-team-name"
             style={{

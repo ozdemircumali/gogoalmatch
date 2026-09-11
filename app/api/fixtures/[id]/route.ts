@@ -1,59 +1,46 @@
-import { NextResponse } from "next/server";
+// app/api/fixtures/[id]/route.ts
+import { NextResponse } from 'next/server';
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const apiKey = process.env.API_FOOTBALL_KEY;
-
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "API_FOOTBALL_KEY is not configured" },
-      { status: 500 }
-    );
-  }
-
   try {
-    const headers = {
-      "x-apisports-key": apiKey,
-    };
+    const matchId = params.id;
 
-    const [fixtureResponse, eventsResponse, statisticsResponse, lineupsResponse] =
-      await Promise.all([
-        fetch(
-          `https://v3.football.api-sports.io/fixtures?id=${params.id}`,
-          { headers, cache: "no-store" }
-        ),
-        fetch(
-          `https://v3.football.api-sports.io/fixtures/events?fixture=${params.id}`,
-          { headers, cache: "no-store" }
-        ),
-        fetch(
-          `https://v3.football.api-sports.io/fixtures/statistics?fixture=${params.id}`,
-          { headers, cache: "no-store" }
-        ),
-        fetch(
-          `https://v3.football.api-sports.io/fixtures/lineups?fixture=${params.id}`,
-          { headers, cache: "no-store" }
-        ),
-      ]);
+    if (!matchId) {
+      return NextResponse.json({ error: 'Match ID is required' }, { status: 400 });
+    }
 
-    const fixture = await fixtureResponse.json();
-    const events = await eventsResponse.json();
-    const statistics = await statisticsResponse.json();
-    const lineups = await lineupsResponse.json();
+    const response = await fetch(
+      `https://v3.football.api-sports.io/fixtures?id=${matchId}`,
+      {
+        method: 'GET',
+        headers: {
+          'x-rapidapi-host': 'v3.football.api-sports.io',
+          'x-rapidapi-key': process.env.API_FOOTBALL_KEY || '',
+        },
+        // Revalidation veya Cache ayarları
+        next: { revalidate: 30 },
+      }
+    );
 
-    return NextResponse.json({
-      fixture: fixture.response?.[0] || null,
-      events: events.response || [],
-      statistics: statistics.response || [],
-      lineups: lineups.response || [],
-    });
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // API-Football veriyi "response" dizisi içinde döndürür
+    if (!data.response || data.response.length === 0) {
+      return NextResponse.json({ error: 'Match not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(data.response[0]);
   } catch (error) {
-    console.error("Failed to fetch fixture details:", error);
-
+    console.error('Fixture detail fetch error:', error);
     return NextResponse.json(
-      { error: "Failed to fetch fixture details" },
+      { error: 'Internal Server Error' },
       { status: 500 }
     );
   }

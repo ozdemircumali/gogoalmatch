@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+const BASE_URL = "https://v3.football.api-sports.io";
+
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
@@ -26,49 +28,108 @@ export async function GET(
     "x-apisports-key": apiKey,
   };
 
-  const baseUrl = "https://v3.football.api-sports.io";
-
-  async function fetchApi(endpoint: string) {
-    const response = await fetch(`${baseUrl}${endpoint}`, {
+  async function api(endpoint: string) {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
       headers,
       cache: "no-store",
     });
 
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
+      throw new Error(
+        `API Football error: ${response.status}`
+      );
     }
 
     const data = await response.json();
 
-    return data.response ?? [];
+    return {
+      response: data.response ?? [],
+      results: data.results ?? 0,
+      errors: data.errors ?? {},
+    };
   }
 
   try {
-    const [fixture, events, statistics, lineups] = await Promise.all([
-      fetchApi(`/fixtures?id=${fixtureId}`),
-      fetchApi(`/fixtures/events?fixture=${fixtureId}`),
-      fetchApi(`/fixtures/statistics?fixture=${fixtureId}`),
-      fetchApi(`/fixtures/lineups?fixture=${fixtureId}`),
+    const [
+      fixture,
+      events,
+      statistics,
+      lineups,
+      players,
+    ] = await Promise.all([
+      api(`/fixtures?id=${fixtureId}`),
+      api(`/fixtures/events?fixture=${fixtureId}`),
+      api(`/fixtures/statistics?fixture=${fixtureId}`),
+      api(`/fixtures/lineups?fixture=${fixtureId}`),
+      api(`/fixtures/players?fixture=${fixtureId}`),
     ]);
 
-    if (!fixture.length) {
+    if (!fixture.response.length) {
       return NextResponse.json(
-        { error: "Fixture not found" },
+        {
+          error: "Fixture not found",
+          fixtureId,
+        },
         { status: 404 }
       );
     }
 
+    const match = fixture.response[0];
+
     return NextResponse.json({
-      fixture: fixture[0],
-      events,
-      statistics,
-      lineups,
+      success: true,
+
+      match,
+
+      fixture: match,
+
+      teams: {
+        home: match.teams?.home ?? null,
+        away: match.teams?.away ?? null,
+      },
+
+      league: match.league ?? null,
+
+      venue: match.fixture?.venue ?? null,
+
+      referee: match.fixture?.referee ?? null,
+
+      status: match.fixture?.status ?? null,
+
+      score: match.goals ?? null,
+
+      halftime: match.score?.halftime ?? null,
+
+      fulltime: match.score?.fulltime ?? null,
+
+      extratime: match.score?.extratime ?? null,
+
+      penalty: match.score?.penalty ?? null,
+
+      events: events.response,
+
+      statistics: statistics.response,
+
+      lineups: lineups.response,
+
+      players: players.response,
+
+      meta: {
+        fixtureId: Number(fixtureId),
+        eventsCount: events.results,
+        statisticsCount: statistics.results,
+        lineupsCount: lineups.results,
+        playersCount: players.results,
+      },
     });
   } catch (error) {
-    console.error("Match center API error:", error);
+    console.error("MATCH CENTER ERROR:", error);
 
     return NextResponse.json(
-      { error: "Failed to load match data" },
+      {
+        success: false,
+        error: "Failed to load match center data",
+      },
       { status: 500 }
     );
   }

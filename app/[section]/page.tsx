@@ -15,7 +15,6 @@ type Match = {
   league: {
     name: string;
     country: string;
-    logo: string;
   };
   teams: {
     home: {
@@ -44,7 +43,19 @@ type Standing = {
   form: string;
 };
 
-const LIVE = ["1H", "2H", "HT", "ET", "BT", "P"];
+type PlayerStat = {
+  player: {
+    name: string;
+    photo: string;
+  };
+  statistics: {
+    goals: {
+      total: number | null;
+      assists: number | null;
+    };
+  }[];
+};
+
 const FINISHED = ["FT", "AET", "PEN"];
 
 export default function SectionPage() {
@@ -53,17 +64,24 @@ export default function SectionPage() {
 
   const [matches, setMatches] = useState<Match[]>([]);
   const [standings, setStandings] = useState<Standing[]>([]);
+  const [players, setPlayers] = useState<PlayerStat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     async function load() {
       setLoading(true);
+      setError("");
 
       try {
         if (section === "results") {
           const res = await fetch("/api/fixtures", {
             cache: "no-store",
           });
+
+          if (!res.ok) {
+            throw new Error("Failed to load results");
+          }
 
           const data = await res.json();
 
@@ -73,9 +91,13 @@ export default function SectionPage() {
         }
 
         if (section === "standings") {
-          const res = await fetch(
-            "https://v3.football.api-sports.io/standings?league=39&season=2026"
-          );
+          const res = await fetch("/api/standings", {
+            cache: "no-store",
+          });
+
+          if (!res.ok) {
+            throw new Error("Failed to load standings");
+          }
 
           const data = await res.json();
 
@@ -85,18 +107,23 @@ export default function SectionPage() {
         }
 
         if (section === "stats") {
-          const res = await fetch(
-            "https://v3.football.api-sports.io/players/topscorers?league=39&season=2026"
-          );
+          const res = await fetch("/api/stats", {
+            cache: "no-store",
+          });
+
+          if (!res.ok) {
+            throw new Error("Failed to load statistics");
+          }
 
           const data = await res.json();
 
           if (data.response) {
-            console.log("Top scorers:", data.response);
+            setPlayers(data.response);
           }
         }
-      } catch (error) {
-        console.error(error);
+      } catch (err) {
+        console.error(err);
+        setError("Unable to load data.");
       } finally {
         setLoading(false);
       }
@@ -185,7 +212,11 @@ export default function SectionPage() {
 
           {loading && <p>Loading...</p>}
 
-          {!loading && section === "results" && (
+          {!loading && error && (
+            <p style={{ color: "#dc2626" }}>{error}</p>
+          )}
+
+          {!loading && !error && section === "results" && (
             <>
               {finishedMatches.length === 0 ? (
                 <p style={{ color: "#6b7280" }}>
@@ -268,13 +299,13 @@ export default function SectionPage() {
             </>
           )}
 
-          {!loading && section === "standings" && (
+          {!loading && !error && section === "standings" && (
             <>
               <h2>Premier League</h2>
 
               {standings.length === 0 ? (
                 <p style={{ color: "#6b7280" }}>
-                  Standings are currently unavailable.
+                  No standings available.
                 </p>
               ) : (
                 <div style={{ overflowX: "auto" }}>
@@ -359,57 +390,72 @@ export default function SectionPage() {
             </>
           )}
 
-          {!loading && section === "stats" && (
-            <div>
-              <h2>Football Statistics</h2>
+          {!loading && !error && section === "stats" && (
+            <>
+              <h2>Premier League Statistics</h2>
 
-              <p style={{ color: "#6b7280" }}>
-                Top scorers and detailed player statistics will appear here.
-              </p>
+              {players.length === 0 ? (
+                <p style={{ color: "#6b7280" }}>
+                  No player statistics available.
+                </p>
+              ) : (
+                <div>
+                  {players.slice(0, 20).map((item, index) => {
+                    const stats = item.statistics?.[0];
+                    const goals = stats?.goals?.total ?? 0;
+                    const assists = stats?.goals?.assists ?? 0;
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "repeat(auto-fit, minmax(220px, 1fr))",
-                  gap: "16px",
-                  marginTop: "20px",
-                }}
-              >
-                <div
-                  style={{
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "12px",
-                    padding: "20px",
-                  }}
-                >
-                  <h3>Top Scorers</h3>
-                  <p>Premier League</p>
+                    return (
+                      <div
+                        key={index}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "15px",
+                          padding: "14px 0",
+                          borderTop: "1px solid #e5e7eb",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                          }}
+                        >
+                          {item.player.photo && (
+                            <img
+                              src={item.player.photo}
+                              alt=""
+                              width="40"
+                              height="40"
+                              style={{
+                                borderRadius: "50%",
+                                objectFit: "cover",
+                              }}
+                            />
+                          )}
+
+                          <strong>{item.player.name}</strong>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "20px",
+                            fontSize: "14px",
+                          }}
+                        >
+                          <span>Goals: {goals}</span>
+                          <span>Assists: {assists}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-
-                <div
-                  style={{
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "12px",
-                    padding: "20px",
-                  }}
-                >
-                  <h3>Top Assists</h3>
-                  <p>Player statistics</p>
-                </div>
-
-                <div
-                  style={{
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "12px",
-                    padding: "20px",
-                  }}
-                >
-                  <h3>Cards</h3>
-                  <p>Yellow and red cards</p>
-                </div>
-              </div>
-            </div>
+              )}
+            </>
           )}
         </div>
       </section>

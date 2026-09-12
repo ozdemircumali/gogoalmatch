@@ -1,1727 +1,922 @@
 "use client";
 
-import { useEffect, useState } from “react”;
-import { useParams } from “next/navigation”;
-import Link from “next/link”;
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+
+type MatchEvent = {
+  time: {
+    elapsed: number;
+    extra?: number;
+  };
+  team: {
+    id: number;
+    name: string;
+  };
+  player: {
+    name: string;
+  };
+  assist?: {
+    name: string;
+  };
+  type: string;
+  detail: string;
+};
+
+type MatchStatistic = {
+  type: string;
+  value: number | string | null;
+};
+
+type TeamStatistics = {
+  team: {
+    id: number;
+    name: string;
+  };
+  statistics: MatchStatistic[];
+};
+
+type LineupPlayer = {
+  player: {
+    id: number;
+    name: string;
+    number: number;
+    pos: string;
+  };
+};
+
+type TeamLineup = {
+  team: {
+    id: number;
+    name: string;
+  };
+  formation: string;
+  startXI: LineupPlayer[];
+  substitutes: LineupPlayer[];
+};
 
 type MatchDetail = {
-fixture: {
-id: number;
-date: string;
-status: {
-long: string;
-short: string;
-elapsed: number | null;
-};
-venue?: {
-name?: string | null;
-city?: string | null;
-};
-referee?: string | null;
-};
-league: {
-name: string;
-country: string;
-logo: string;
-};
-teams: {
-home: {
-id: number;
-name: string;
-logo: string;
-winner: boolean | null;
-};
-away: {
-id: number;
-name: string;
-logo: string;
-winner: boolean | null;
-};
-};
-goals: {
-home: number | null;
-away: number | null;
-};
-score: {
-halftime: {
-home: number | null;
-away: number | null;
-};
-fulltime: {
-home: number | null;
-away: number | null;
-};
-};
-events?: Array<{
-time: {
-elapsed: number;
-extra?: number;
-};
-team: {
-id: number;
-name: string;
-};
-player: {
-name: string;
-};
-assist?: {
-name: string;
-};
-type: string;
-detail: string;
-}>;
-statistics?: Array<{
-team: {
-id: number;
-name: string;
-};
-statistics: Array<{
-type: string;
-value: number | string | null;
-}>;
-}>;
-lineups?: Array<{
-team: {
-id: number;
-name: string;
-};
-formation: string;
-startXI: Array<{
-player: {
-id: number;
-name: string;
-number: number;
-pos: string;
-};
-}>;
-substitutes: Array<{
-player: {
-id: number;
-name: string;
-number: number;
-pos: string;
-};
-}>;
-}>;
+  fixture: {
+    id: number;
+    date: string;
+    status: {
+      long: string;
+      short: string;
+      elapsed: number | null;
+    };
+    venue?: {
+      name?: string | null;
+      city?: string | null;
+    };
+    referee?: string | null;
+  };
+  league: {
+    name: string;
+    country: string;
+    logo: string;
+  };
+  teams: {
+    home: {
+      id: number;
+      name: string;
+      logo: string;
+      winner: boolean | null;
+    };
+    away: {
+      id: number;
+      name: string;
+      logo: string;
+      winner: boolean | null;
+    };
+  };
+  goals: {
+    home: number | null;
+    away: number | null;
+  };
+  score: {
+    halftime: {
+      home: number | null;
+      away: number | null;
+    };
+    fulltime: {
+      home: number | null;
+      away: number | null;
+    };
+  };
+  events?: MatchEvent[];
+  statistics?: TeamStatistics[];
+  lineups?: TeamLineup[];
 };
 
-const LIVE_STATUSES = [“1H”, “2H”, “HT”, “ET”, “BT”, “P”];
-const FINISHED_STATUSES = [“FT”, “AET”, “PEN”];
+const LIVE_STATUSES = ["1H", "2H", "HT", "ET", "BT", "P"];
+const FINISHED_STATUSES = ["FT", "AET", "PEN"];
 
-type Tab = “SUMMARY” | “STATS” | “LINEUPS” | “INFO”;
+type DetailTab = "SUMMARY" | "STATS" | "LINEUPS";
 
 export default function MatchDetailPage() {
-const params = useParams();
-const id = params?.id;
+  const params = useParams();
+  const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
-const [match, setMatch] = useState<MatchDetail | null>(null);
-const [loading, setLoading] = useState(true);
-const [activeTab, setActiveTab] = useState(“SUMMARY”);
+  const [match, setMatch] = useState<MatchDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<DetailTab>("SUMMARY");
 
-async function loadMatchDetail() {
-if (!id) return;
+  useEffect(() => {
+    if (!id) return;
 
-try {
-  const response = await fetch(`/api/fixtures/${id}`, {
-    cache: "no-store",
-  });
-  const data = await response.json();
-  if (data.response && data.response.length > 0) {
-    setMatch(data.response[0]);
-  } else {
-    setMatch(null);
+    let cancelled = false;
+
+    async function fetchMatch() {
+      try {
+        const response = await fetch(`/api/fixtures/${id}`, {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to load match");
+        }
+
+        const data = await response.json();
+
+        if (!cancelled) {
+          if (data?.response && data.response.length > 0) {
+            setMatch(data.response[0]);
+          } else {
+            setMatch(null);
+          }
+
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error("Failed to load match detail:", error);
+
+        if (!cancelled) {
+          setMatch(null);
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchMatch();
+
+    const interval = setInterval(fetchMatch, 30000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[#f6f7f9] text-[#111827]">
+        <div className="max-w-5xl mx-auto px-4 py-10">
+          <div className="animate-pulse space-y-4">
+            <div className="h-5 w-32 bg-gray-200 rounded" />
+            <div className="bg-white border border-gray-200 rounded-2xl h-72" />
+            <div className="bg-white border border-gray-200 rounded-2xl h-20" />
+          </div>
+        </div>
+      </main>
+    );
   }
-} catch (error) {
-  console.error("Failed to load match detail:", error);
-  setMatch(null);
-} finally {
-  setLoading(false);
-}
 
-}
+  if (!match) {
+    return (
+      <main className="min-h-screen bg-[#f6f7f9] text-[#111827] flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-white border border-gray-200 rounded-2xl p-8 text-center shadow-sm">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-orange-50 flex items-center justify-center">
+            <span className="text-2xl font-black text-orange-500">!</span>
+          </div>
 
-useEffect(() => {
-loadMatchDetail();
+          <h1 className="text-lg font-black mb-2">
+            Match Not Found
+          </h1>
 
-const interval = setInterval(loadMatchDetail, 30000);
-return () => clearInterval(interval);
+          <p className="text-sm text-gray-500 mb-6">
+            The match information could not be found.
+          </p>
 
-}, [id]);
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold transition"
+          >
+            Back to Matches
+          </Link>
+        </div>
+      </main>
+    );
+  }
 
-if (loading) {
-return (
-Loading match details…
-    <PageStyles />
-  </main>
-);
+  const status = match.fixture.status.short;
+  const isLive = LIVE_STATUSES.includes(status);
+  const isFinished = FINISHED_STATUSES.includes(status);
 
-}
+  const homeScore = match.goals.home ?? 0;
+  const awayScore = match.goals.away ?? 0;
 
-if (!match) {
-return (
-⚽
+  const kickoffTime = new Date(match.fixture.date).toLocaleTimeString(
+    "en-US",
+    {
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+  );
 
-      <h1>Match Not Found</h1>
-      <p>
-        The match could not be found or is no longer available.
-      </p>
-      <Link href="/" className="backButton">
-        Back to Matches
-      </Link>
-    </div>
-    <PageStyles />
-  </main>
-);
+  let statusText = kickoffTime;
 
-}
+  if (isLive) {
+    statusText =
+      match.fixture.status.elapsed != null
+        ? `${match.fixture.status.elapsed}'`
+        : status;
+  }
 
-const status = match.fixture.status.short;
+  if (isFinished) {
+    statusText = "FULL TIME";
+  }
 
-const isLive = LIVE_STATUSES.includes(status);
-const isFinished = FINISHED_STATUSES.includes(status);
+  return (
+    <main className="min-h-screen bg-[#f6f7f9] text-[#111827] pb-12">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-20">
+        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-orange-500 transition"
+          >
+            <span className="text-lg">←</span>
+            <span>All Matches</span>
+          </Link>
 
-const statusLabel = isLive
-? match.fixture.status.elapsed != null
-? ${match.fixture.status.elapsed}'
-: “LIVE”
-: isFinished
-? “FULL TIME”
-: new Date(match.fixture.date).toLocaleTimeString(“en-US”, {
-hour: “numeric”,
-minute: “2-digit”,
-});
+          <div className="flex items-center gap-2 min-w-0">
+            {match.league.logo && (
+              <img
+                src={match.league.logo}
+                alt=""
+                width={24}
+                height={24}
+                className="w-6 h-6 object-contain shrink-0"
+              />
+            )}
 
-const matchDate = new Date(match.fixture.date).toLocaleDateString(“en-US”, {
-weekday: “long”,
-month: “long”,
-day: “numeric”,
-year: “numeric”,
-});
+            <div className="text-right min-w-0">
+              <div className="text-xs font-black truncate max-w-[180px] sm:max-w-[300px]">
+                {match.league.name}
+              </div>
 
-return (
-  <header className="detailHeader">
-    <div className="headerInner">
-      <Link href="/" className="backLink">
-        <span className="backArrow">←</span>
-        <span>All Matches</span>
-      </Link>
-      <Link href="/" className="detailBrand">
-        <span className="brandMark">G</span>
-        <span>
-          GoGoal<span>Match</span>
-        </span>
-      </Link>
-    </div>
-  </header>
-  <div className="detailContainer">
-    <section className="matchHero">
-      <div className="heroTop">
-        <div className="leagueInfo">
-          {match.league.logo && (
-            <img
-              src={match.league.logo}
-              alt=""
-              className="heroLeagueLogo"
-            />
-          )}
-          <div>
-            <div className="leagueName">
-              {match.league.name}
-            </div>
-            <div className="leagueCountry">
-              {match.league.country}
+              <div className="text-[10px] text-gray-400 font-medium">
+                {match.league.country}
+              </div>
             </div>
           </div>
         </div>
-        {isLive && (
-          <div className="liveStatus">
-            <span className="liveDot" />
-            LIVE
-          </div>
-        )}
-        {isFinished && (
-          <div className="finishedStatus">
-            FULL TIME
-          </div>
-        )}
-        {!isLive && !isFinished && (
-          <div className="upcomingStatus">
-            UPCOMING
-          </div>
-        )}
-      </div>
-      <div className="teamsArea">
-        <div className="teamSide">
-          <div className="teamLogoBox">
-            <img
-              src={match.teams.home.logo}
-              alt={match.teams.home.name}
-            />
-          </div>
-          <h2>{match.teams.home.name}</h2>
-          <span className="teamLabel">HOME</span>
-        </div>
-        <div className="scoreArea">
-          {!isLive && !isFinished ? (
-            <>
-              <div className="upcomingTime">
-                {statusLabel}
-              </div>
-              <div className="dateText">
-                {matchDate}
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="mainScore">
-                <span>{match.goals.home ?? 0}</span>
-                <b>-</b>
-                <span>{match.goals.away ?? 0}</span>
-              </div>
+      </header>
+
+      <div className="max-w-5xl mx-auto px-4 pt-5 sm:pt-7">
+        <section className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="h-1 bg-gradient-to-r from-orange-400 to-orange-600" />
+
+          <div className="px-4 sm:px-8 py-7 sm:py-9">
+            <div className="text-center mb-7">
               <div
-                className={`scoreStatus ${
-                  isLive ? "scoreLive" : ""
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                  isLive
+                    ? "bg-red-50 text-red-600"
+                    : isFinished
+                      ? "bg-gray-100 text-gray-500"
+                      : "bg-orange-50 text-orange-600"
                 }`}
               >
-                {statusLabel}
+                {isLive && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                )}
+
+                {statusText}
               </div>
-              {match.score.halftime.home != null && (
-                <div className="halfTime">
-                  HT&nbsp;&nbsp;
-                  {match.score.halftime.home} -{" "}
-                  {match.score.halftime.away}
-                </div>
-              )}
-            </>
+            </div>
+
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-8">
+              <TeamHeader
+                name={match.teams.home.name}
+                logo={match.teams.home.logo}
+                winner={match.teams.home.winner}
+              />
+
+              <div className="text-center min-w-[90px] sm:min-w-[130px]">
+                {isLive || isFinished ? (
+                  <>
+                    <div className="text-3xl sm:text-5xl font-black tracking-tight text-gray-900">
+                      {homeScore}
+                      <span className="text-gray-300 mx-2 sm:mx-3">
+                        -
+                      </span>
+                      {awayScore}
+                    </div>
+
+                    {match.score.halftime.home != null &&
+                      match.score.halftime.away != null && (
+                        <div className="mt-2 text-[10px] sm:text-xs text-gray-400 font-bold">
+                          HT {match.score.halftime.home} -{" "}
+                          {match.score.halftime.away}
+                        </div>
+                      )}
+                  </>
+                ) : (
+                  <>
+                    <div className="text-2xl sm:text-3xl font-black text-gray-900">
+                      {kickoffTime}
+                    </div>
+
+                    <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">
+                      Kick-off
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <TeamHeader
+                name={match.teams.away.name}
+                logo={match.teams.away.logo}
+                winner={match.teams.away.winner}
+              />
+            </div>
+          </div>
+        </section>
+
+        <nav className="mt-5 bg-white border border-gray-200 rounded-2xl p-1.5 flex overflow-x-auto shadow-sm">
+          <TabButton
+            active={activeTab === "SUMMARY"}
+            onClick={() => setActiveTab("SUMMARY")}
+          >
+            Summary
+          </TabButton>
+
+          <TabButton
+            active={activeTab === "STATS"}
+            onClick={() => setActiveTab("STATS")}
+          >
+            Statistics
+          </TabButton>
+
+          <TabButton
+            active={activeTab === "LINEUPS"}
+            onClick={() => setActiveTab("LINEUPS")}
+          >
+            Lineups
+          </TabButton>
+        </nav>
+
+        <section className="mt-4">
+          {activeTab === "SUMMARY" && (
+            <SummarySection
+              events={match.events || []}
+              homeId={match.teams.home.id}
+              fixture={match.fixture}
+            />
           )}
-        </div>
-        <div className="teamSide">
-          <div className="teamLogoBox">
-            <img
-              src={match.teams.away.logo}
-              alt={match.teams.away.name}
+
+          {activeTab === "STATS" && (
+            <StatisticsSection
+              statistics={match.statistics || []}
+              homeId={match.teams.home.id}
+            />
+          )}
+
+          {activeTab === "LINEUPS" && (
+            <LineupsSection
+              lineups={match.lineups || []}
+              homeId={match.teams.home.id}
+            />
+          )}
+        </section>
+
+        <section className="mt-4 bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100">
+            <h2 className="text-sm font-black">Match Information</h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2">
+            <InfoItem
+              label="Venue"
+              value={
+                match.fixture.venue?.name
+                  ? `${match.fixture.venue.name}${
+                      match.fixture.venue.city
+                        ? `, ${match.fixture.venue.city}`
+                        : ""
+                    }`
+                  : "Not available"
+              }
+            />
+
+            <InfoItem
+              label="Referee"
+              value={match.fixture.referee || "Not available"}
+            />
+
+            <InfoItem
+              label="Competition"
+              value={match.league.name}
+            />
+
+            <InfoItem
+              label="Country"
+              value={match.league.country}
             />
           </div>
-          <h2>{match.teams.away.name}</h2>
-          <span className="teamLabel">AWAY</span>
-        </div>
+        </section>
       </div>
-      <div className="heroFooter">
-        <div>
-          <span className="footerLabel">DATE</span>
-          <strong>{matchDate}</strong>
-        </div>
-        <div>
-          <span className="footerLabel">STATUS</span>
-          <strong>{match.fixture.status.long}</strong>
-        </div>
-        {match.fixture.venue?.name && (
-          <div>
-            <span className="footerLabel">VENUE</span>
-            <strong>
-              {match.fixture.venue.name}
-              {match.fixture.venue.city
-                ? `, ${match.fixture.venue.city}`
-                : ""}
-            </strong>
-          </div>
-        )}
-      </div>
-    </section>
-    <nav className="tabs">
-      <TabButton
-        active={activeTab === "SUMMARY"}
-        onClick={() => setActiveTab("SUMMARY")}
-        icon="◉"
-      >
-        Summary
-      </TabButton>
-      <TabButton
-        active={activeTab === "STATS"}
-        onClick={() => setActiveTab("STATS")}
-        icon="▥"
-      >
-        Statistics
-      </TabButton>
-      <TabButton
-        active={activeTab === "LINEUPS"}
-        onClick={() => setActiveTab("LINEUPS")}
-        icon="♙"
-      >
-        Lineups
-      </TabButton>
-      <TabButton
-        active={activeTab === "INFO"}
-        onClick={() => setActiveTab("INFO")}
-        icon="ⓘ"
-      >
-        Match Info
-      </TabButton>
-    </nav>
-    <section className="contentCard">
-      {activeTab === "SUMMARY" && (
-        <MatchSummary
-          events={match.events || []}
-          homeId={match.teams.home.id}
-        />
-      )}
-      {activeTab === "STATS" && (
-        <MatchStatistics
-          statistics={match.statistics || []}
-          homeName={match.teams.home.name}
-          awayName={match.teams.away.name}
-        />
-      )}
-      {activeTab === "LINEUPS" && (
-        <MatchLineups
-          lineups={match.lineups || []}
-          homeId={match.teams.home.id}
-        />
-      )}
-      {activeTab === "INFO" && (
-        <MatchInfo
-          match={match}
-          matchDate={matchDate}
-        />
-      )}
-    </section>
-  </div>
-</main>
+    </main>
+  );
+}
 
-);
+function TeamHeader({
+  name,
+  logo,
+  winner,
+}: {
+  name: string;
+  logo: string;
+  winner: boolean | null;
+}) {
+  return (
+    <div className="min-w-0 flex flex-col items-center text-center">
+      <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mb-3">
+        <img
+          src={logo}
+          alt={name}
+          width={80}
+          height={80}
+          className="w-full h-full object-contain"
+        />
+      </div>
+
+      <div
+        className={`text-xs sm:text-sm leading-tight max-w-[130px] sm:max-w-[190px] ${
+          winner
+            ? "font-black text-gray-900"
+            : "font-bold text-gray-600"
+        }`}
+      >
+        {name}
+      </div>
+    </div>
+  );
 }
 
 function TabButton({
-active,
-children,
-icon,
-onClick,
+  active,
+  children,
+  onClick,
 }: {
-active: boolean;
-children: React.ReactNode;
-icon: string;
-onClick: () => void;
+  active: boolean;
+  children: React.ReactNode;
+  onClick: () => void;
 }) {
-return (
-<button
-onClick={onClick}
-className={tabButton ${active ? "active" : ""}}
->
-{icon}
-{children}
-);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex-1 min-w-[110px] px-4 py-2.5 rounded-xl text-xs font-black transition ${
+        active
+          ? "bg-orange-500 text-white shadow-sm"
+          : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
+      }`}
+    >
+      {children}
+    </button>
+  );
 }
 
-function MatchSummary({
-events,
-homeId,
+function SummarySection({
+  events,
+  homeId,
+  fixture,
 }: {
-events: MatchDetail[“events”];
-homeId: number;
+  events: MatchEvent[];
+  homeId: number;
+  fixture: MatchDetail["fixture"];
 }) {
-if (!events || events.length === 0) {
-return (
-);
-}
+  const sortedEvents = [...events].sort(
+    (a, b) => a.time.elapsed - b.time.elapsed
+  );
 
-const sortedEvents = […events].sort(
-(a, b) => a.time.elapsed - b.time.elapsed
-);
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-100">
+        <h2 className="text-sm font-black">Match Events</h2>
+      </div>
 
-return (
-  <div className="timeline">
-    {sortedEvents.map((event, index) => {
-      const isHome = event.team.id === homeId;
-      const type = event.type.toLowerCase();
-      const detail = event.detail.toLowerCase();
-      const isGoal = type === "goal";
-      const isCard = type === "card";
-      const isSubstitution =
-        type === "subst" || type === "substitution";
-      let eventIcon = "•";
-      if (isGoal) eventIcon = "⚽";
-      else if (isCard) {
-        eventIcon = detail.includes("red") ? "🟥" : "🟨";
-      } else if (isSubstitution) {
-        eventIcon = "↕";
-      }
-      return (
-        <div
-          key={`${event.time.elapsed}-${index}`}
-          className={`eventRow ${
-            isHome ? "homeEvent" : "awayEvent"
-          }`}
-        >
-          <div className="eventMinute">
-            {event.time.elapsed}
-            {event.time.extra ? `+${event.time.extra}` : ""}'
+      {sortedEvents.length === 0 ? (
+        <div className="px-5 py-12 text-center">
+          <div className="text-sm font-bold text-gray-500">
+            No match events available.
           </div>
-          <div className="eventLine">
-            <div className="eventDot">
-              {eventIcon}
+
+          <div className="text-xs text-gray-400 mt-1">
+            Events will appear here when provided by the data feed.
+          </div>
+        </div>
+      ) : (
+        <div className="p-4 sm:p-6">
+          <div className="space-y-2">
+            {sortedEvents.map((event, index) => {
+              const isHome = event.team.id === homeId;
+              const type = event.type.toLowerCase();
+
+              let icon = "•";
+
+              if (type === "goal") {
+                icon = "G";
+              } else if (type === "card") {
+                icon = event.detail.toLowerCase().includes("red")
+                  ? "R"
+                  : "Y";
+              } else if (type === "subst") {
+                icon = "S";
+              }
+
+              return (
+                <div
+                  key={`${event.time.elapsed}-${event.player.name}-${index}`}
+                  className={`flex items-center gap-3 ${
+                    isHome ? "" : "flex-row-reverse"
+                  }`}
+                >
+                  <div className="w-10 shrink-0 text-center">
+                    <span className="text-[11px] font-black text-orange-500">
+                      {event.time.elapsed}
+                      {event.time.extra
+                        ? `+${event.time.extra}`
+                        : ""}
+                      '
+                    </span>
+                  </div>
+
+                  <div
+                    className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100 bg-gray-50 ${
+                      isHome ? "" : "flex-row-reverse text-right"
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center shrink-0">
+                      <span className="text-[10px] font-black text-gray-700">
+                        {icon}
+                      </span>
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="text-xs font-black text-gray-900">
+                        {event.player?.name || "Unknown player"}
+                      </div>
+
+                      <div className="text-[10px] text-gray-400 mt-0.5">
+                        {event.detail || event.type}
+                      </div>
+
+                      {event.assist?.name && (
+                        <div className="text-[10px] text-gray-500 mt-1">
+                          Assist: {event.assist.name}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="border-t border-gray-100 px-5 py-4 bg-gray-50">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div>
+            <span className="text-gray-400 font-bold">Status</span>
+            <div className="font-black text-gray-700 mt-1">
+              {fixture.status.long}
             </div>
           </div>
-          <div className="eventContent">
-            <div className="eventPlayer">
-              {event.player.name}
-            </div>
-            <div className="eventDetail">
-              {event.detail}
-            </div>
-            {event.assist?.name && (
-              <div className="eventAssist">
-                Assist: {event.assist.name}
-              </div>
-            )}
-            <div className="eventTeam">
-              {event.team.name}
+
+          <div>
+            <span className="text-gray-400 font-bold">Match Date</span>
+            <div className="font-black text-gray-700 mt-1">
+              {new Date(fixture.date).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
             </div>
           </div>
         </div>
-      );
-    })}
-  </div>
-</div>
-
-);
-}
-
-function MatchStatistics({
-statistics,
-homeName,
-awayName,
-}: {
-statistics: MatchDetail[“statistics”];
-homeName: string;
-awayName: string;
-}) {
-if (!statistics || statistics.length < 2) {
-return (
-);
-}
-
-const homeStats = statistics[0]?.statistics || [];
-const awayStats = statistics[1]?.statistics || [];
-
-return (
-  <div className="statsTeams">
-    <span>{homeName}</span>
-    <span>VS</span>
-    <span>{awayName}</span>
-  </div>
-  <div className="statsList">
-    {homeStats.map((item, index) => {
-      const awayItem = awayStats[index];
-      const homeNumeric =
-        typeof item.value === "number"
-          ? item.value
-          : Number.parseFloat(String(item.value ?? 0)) || 0;
-      const awayNumeric =
-        typeof awayItem?.value === "number"
-          ? awayItem.value
-          : Number.parseFloat(
-              String(awayItem?.value ?? 0)
-            ) || 0;
-      const total = homeNumeric + awayNumeric;
-      const homePercent =
-        total > 0 ? (homeNumeric / total) * 100 : 50;
-      return (
-        <div className="statItem" key={item.type}>
-          <div className="statValues">
-            <span className="homeValue">
-              {item.value ?? "0"}
-            </span>
-            <span className="statName">
-              {formatStatName(item.type)}
-            </span>
-            <span className="awayValue">
-              {awayItem?.value ?? "0"}
-            </span>
-          </div>
-          <div className="statBar">
-            <div
-              className="statHome"
-              style={{ width: `${homePercent}%` }}
-            />
-            <div
-              className="statAway"
-              style={{ width: `${100 - homePercent}%` }}
-            />
-          </div>
-        </div>
-      );
-    })}
-  </div>
-</div>
-
-);
-}
-
-function MatchLineups({
-lineups,
-homeId,
-}: {
-lineups: MatchDetail[“lineups”];
-homeId: number;
-}) {
-if (!lineups || lineups.length === 0) {
-return (
-);
-}
-
-const homeLineup =
-lineups.find((lineup) => lineup.team.id === homeId) ||
-lineups[0];
-
-const awayLineup =
-lineups.find((lineup) => lineup.team.id !== homeId) ||
-lineups[1];
-
-return (
-  <div className="lineupsGrid">
-    <TeamLineupBox
-      lineup={homeLineup}
-      side="home"
-    />
-    <TeamLineupBox
-      lineup={awayLineup}
-      side="away"
-    />
-  </div>
-</div>
-
-);
-}
-
-function TeamLineupBox({
-lineup,
-side,
-}: {
-lineup: MatchDetail[“lineups”][number] | undefined;
-side: “home” | “away”;
-}) {
-if (!lineup) {
-return (
-);
-}
-
-return (
-{lineup.team.name}
-      <div className="lineupLabel">
-        {side === "home" ? "HOME" : "AWAY"}
       </div>
     </div>
-    {lineup.formation && (
-      <div className="formation">
-        {lineup.formation}
-      </div>
-    )}
-  </div>
-  <div className="playerList">
-    {lineup.startXI?.map((item, index) => (
-      <div
-        className="playerRow"
-        key={`${item.player.id}-${index}`}
-      >
-        <span className="playerNumber">
-          {item.player.number}
-        </span>
-        <div className="playerInfo">
-          <span className="playerName">
-            {item.player.name}
-          </span>
-          <span className="playerPosition">
-            {item.player.pos}
-          </span>
-        </div>
-      </div>
-    ))}
-  </div>
-  {lineup.substitutes?.length > 0 && (
-    <details className="substitutes">
-      <summary>
-        Substitutes
-        <span>{lineup.substitutes.length}</span>
-      </summary>
-      <div className="substituteList">
-        {lineup.substitutes.map((item, index) => (
-          <div
-            className="substituteRow"
-            key={`${item.player.id}-${index}`}
-          >
-            <span className="playerNumber">
-              {item.player.number}
-            </span>
-            <span>{item.player.name}</span>
-            <small>{item.player.pos}</small>
-          </div>
-        ))}
-      </div>
-    </details>
-  )}
-</div>
-
-);
+  );
 }
 
-function MatchInfo({
-match,
-matchDate,
+function StatisticsSection({
+  statistics,
+  homeId,
 }: {
-match: MatchDetail;
-matchDate: string;
+  statistics: TeamStatistics[];
+  homeId: number;
 }) {
-return (
-  <div className="infoGrid">
-    <InfoItem
-      label="Competition"
-      value={match.league.name}
-    />
-    <InfoItem
-      label="Country"
-      value={match.league.country}
-    />
-    <InfoItem
-      label="Date"
-      value={matchDate}
-    />
-    <InfoItem
-      label="Kick-off"
-      value={new Date(
-        match.fixture.date
-      ).toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-      })}
-    />
-    <InfoItem
-      label="Status"
-      value={match.fixture.status.long}
-    />
-    <InfoItem
-      label="Referee"
-      value={match.fixture.referee || "Not available"}
-    />
-    <InfoItem
-      label="Stadium"
-      value={match.fixture.venue?.name || "Not available"}
-    />
-    <InfoItem
-      label="City"
-      value={match.fixture.venue?.city || "Not available"}
-    />
-  </div>
-</div>
+  if (statistics.length < 2) {
+    return (
+      <EmptyState
+        title="Statistics Not Available"
+        text="Statistics for this match are not available yet."
+      />
+    );
+  }
 
-);
+  const homeTeam =
+    statistics.find((team) => team.team.id === homeId) ||
+    statistics[0];
+
+  const awayTeam =
+    statistics.find((team) => team.team.id !== homeId) ||
+    statistics[1];
+
+  const awayMap = new Map(
+    awayTeam.statistics.map((item) => [item.type, item.value])
+  );
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-sm font-black">Match Statistics</h2>
+
+          <div className="text-[10px] text-gray-400 font-bold">
+            {homeTeam.team.name} vs {awayTeam.team.name}
+          </div>
+        </div>
+      </div>
+
+      <div className="p-5 sm:p-7 space-y-5">
+        {homeTeam.statistics.map((item, index) => {
+          const awayValue = awayMap.get(item.type);
+
+          const homeNumber = parseStatisticValue(item.value);
+          const awayNumber = parseStatisticValue(awayValue);
+
+          const total = homeNumber + awayNumber;
+
+          const homePercent =
+            total > 0 ? (homeNumber / total) * 100 : 50;
+
+          return (
+            <div key={`${item.type}-${index}`}>
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 mb-2">
+                <span className="text-xs font-black text-gray-900">
+                  {formatStatisticValue(item.value)}
+                </span>
+
+                <span className="text-[10px] sm:text-xs font-bold text-gray-400 text-center">
+                  {formatStatisticName(item.type)}
+                </span>
+
+                <span className="text-xs font-black text-gray-900 text-right">
+                  {formatStatisticValue(awayValue)}
+                </span>
+              </div>
+
+              <div className="flex gap-1 h-2">
+                <div className="flex-1 bg-gray-100 rounded-l-full overflow-hidden flex justify-end">
+                  <div
+                    className="h-full bg-orange-500 rounded-l-full transition-all"
+                    style={{
+                      width: `${homePercent}%`,
+                    }}
+                  />
+                </div>
+
+                <div className="flex-1 bg-gray-100 rounded-r-full overflow-hidden">
+                  <div
+                    className="h-full bg-gray-300 rounded-r-full transition-all"
+                    style={{
+                      width: `${100 - homePercent}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function LineupsSection({
+  lineups,
+  homeId,
+}: {
+  lineups: TeamLineup[];
+  homeId: number;
+}) {
+  if (lineups.length === 0) {
+    return (
+      <EmptyState
+        title="Lineups Not Available"
+        text="Starting lineups have not been provided for this match yet."
+      />
+    );
+  }
+
+  const homeLineup =
+    lineups.find((lineup) => lineup.team.id === homeId) ||
+    lineups[0];
+
+  const awayLineup =
+    lineups.find((lineup) => lineup.team.id !== homeId) ||
+    lineups[1];
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <LineupCard lineup={homeLineup} />
+
+      {awayLineup && <LineupCard lineup={awayLineup} />}
+    </div>
+  );
+}
+
+function LineupCard({
+  lineup,
+}: {
+  lineup: TeamLineup;
+}) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-sm font-black truncate">
+            {lineup.team.name}
+          </h2>
+
+          {lineup.formation && (
+            <span className="shrink-0 text-[10px] font-black text-orange-500 bg-orange-50 px-2.5 py-1 rounded-lg">
+              {lineup.formation}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="p-5">
+        <h3 className="text-[10px] font-black uppercase tracking-wider text-gray-400 mb-3">
+          Starting XI
+        </h3>
+
+        {lineup.startXI.length > 0 ? (
+          <div className="space-y-1.5">
+            {lineup.startXI.map((item, index) => (
+              <PlayerRow
+                key={`${item.player.id}-${index}`}
+                player={item.player}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-xs text-gray-400">
+            Starting lineup unavailable.
+          </div>
+        )}
+
+        {lineup.substitutes.length > 0 && (
+          <>
+            <h3 className="text-[10px] font-black uppercase tracking-wider text-gray-400 mt-6 mb-3">
+              Substitutes
+            </h3>
+
+            <div className="space-y-1.5">
+              {lineup.substitutes.map((item, index) => (
+                <PlayerRow
+                  key={`sub-${item.player.id}-${index}`}
+                  player={item.player}
+                  substitute
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PlayerRow({
+  player,
+  substitute = false,
+}: {
+  player: LineupPlayer["player"];
+  substitute?: boolean;
+}) {
+  return (
+    <div
+      className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+        substitute ? "bg-gray-50" : "bg-white border border-gray-100"
+      }`}
+    >
+      <span
+        className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black ${
+          substitute
+            ? "bg-gray-100 text-gray-500"
+            : "bg-orange-50 text-orange-500"
+        }`}
+      >
+        {player.number}
+      </span>
+
+      <span className="text-xs font-bold text-gray-700 flex-1 truncate">
+        {player.name}
+      </span>
+
+      <span className="text-[9px] font-black text-gray-400">
+        {player.pos}
+      </span>
+    </div>
+  );
 }
 
 function InfoItem({
-label,
-value,
+  label,
+  value,
 }: {
-label: string;
-value: string;
+  label: string;
+  value: string;
 }) {
-return (
-{label}
-{value}
-);
-}
+  return (
+    <div className="px-5 py-4 border-b border-gray-100 sm:nth-[3]:border-b-0">
+      <div className="text-[10px] uppercase tracking-wider font-black text-gray-400">
+        {label}
+      </div>
 
-function SectionTitle({
-title,
-subtitle,
-}: {
-title: string;
-subtitle: string;
-}) {
-return (
-{title}
-{subtitle}
-);
+      <div className="text-xs font-bold text-gray-700 mt-1">
+        {value}
+      </div>
+    </div>
+  );
 }
 
 function EmptyState({
-icon,
-title,
-text,
+  title,
+  text,
 }: {
-icon: string;
-title: string;
-text: string;
+  title: string;
+  text: string;
 }) {
-return (
-{icon}
-{title}
-{text}
-);
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm px-5 py-14 text-center">
+      <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center">
+        <span className="text-sm font-black text-gray-400">—</span>
+      </div>
+
+      <h2 className="text-sm font-black text-gray-800">{title}</h2>
+
+      <p className="text-xs text-gray-400 mt-1">{text}</p>
+    </div>
+  );
 }
 
-function formatStatName(name: string) {
-return name
-.replace(/([a-z])([A-Z])/g, “$1 $2”)
-.replace(/_/g, “ “);
+function parseStatisticValue(value: number | string | null | undefined) {
+  if (value === null || value === undefined) {
+    return 0;
+  }
+
+  const parsed = parseFloat(String(value).replace("%", ""));
+
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function PageStyles() {
-return (
-{`
-* {
-box-sizing: border-box;
+function formatStatisticValue(
+  value: number | string | null | undefined
+) {
+  if (value === null || value === undefined || value === "") {
+    return "0";
+  }
+
+  return String(value);
 }
 
-  body {
-    margin: 0;
-    background: #f6f6f6;
-    color: #171717;
-    font-family:
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      Roboto,
-      Helvetica,
-      Arial,
-      sans-serif;
-  }
-  button,
-  input {
-    font-family: inherit;
-  }
-  .detailPage {
-    min-height: 100vh;
-    background:
-      linear-gradient(
-        180deg,
-        #fff7ed 0px,
-        #ffffff 300px,
-        #f6f6f6 700px
-      );
-    padding-bottom: 50px;
-  }
-  .detailHeader {
-    position: sticky;
-    top: 0;
-    z-index: 50;
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid #e8e8e8;
-  }
-  .headerInner {
-    max-width: 1050px;
-    margin: 0 auto;
-    min-height: 64px;
-    padding: 0 18px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-  }
-  .backLink {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #666;
-    text-decoration: none;
-    font-size: 12px;
-    font-weight: 800;
-    transition: 0.2s;
-  }
-  .backLink:hover {
-    color: #f97316;
-  }
-  .backArrow {
-    font-size: 19px;
-    line-height: 1;
-  }
-  .detailBrand {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #171717;
-    text-decoration: none;
-    font-size: 16px;
-    font-weight: 900;
-  }
-  .detailBrand span span {
-    color: #f97316;
-  }
-  .brandMark {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f97316;
-    color: white;
-    border-radius: 9px;
-    font-weight: 900;
-    box-shadow: 0 4px 10px rgba(249, 115, 22, 0.25);
-  }
-  .detailContainer {
-    width: min(1050px, calc(100% - 30px));
-    margin: 0 auto;
-    padding-top: 22px;
-  }
-  .matchHero {
-    position: relative;
-    overflow: hidden;
-    background: #ffffff;
-    border: 1px solid #e5e5e5;
-    border-radius: 20px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
-  }
-  .matchHero::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(
-      90deg,
-      #f97316,
-      #fb923c,
-      #f97316
-    );
-  }
-  .heroTop {
-    min-height: 68px;
-    padding: 18px 22px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 15px;
-    border-bottom: 1px solid #eeeeee;
-  }
-  .leagueInfo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-  }
-  .heroLeagueLogo {
-    width: 35px;
-    height: 35px;
-    object-fit: contain;
-    flex: 0 0 35px;
-  }
-  .leagueName {
-    font-size: 14px;
-    font-weight: 900;
-    color: #202020;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .leagueCountry {
-    margin-top: 2px;
-    font-size: 11px;
-    color: #999;
-  }
-  .liveStatus,
-  .finishedStatus,
-  .upcomingStatus {
-    flex: 0 0 auto;
-    border-radius: 999px;
-    padding: 7px 12px;
-    font-size: 10px;
-    font-weight: 900;
-    letter-spacing: 0.8px;
-  }
-  .liveStatus {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    color: #ea580c;
-    background: #fff1e7;
-    border: 1px solid #fed7aa;
-  }
-  .liveDot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #f97316;
-    box-shadow: 0 0 0 4px #ffedd5;
-    animation: livePulse 1.5s infinite;
-  }
-  .finishedStatus {
-    color: #555;
-    background: #f4f4f4;
-    border: 1px solid #e2e2e2;
-  }
-  .upcomingStatus {
-    color: #2563eb;
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-  }
-  .teamsArea {
-    display: grid;
-    grid-template-columns: 1fr 180px 1fr;
-    align-items: center;
-    gap: 20px;
-    padding: 35px 35px 32px;
-  }
-  .teamSide {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    min-width: 0;
-  }
-  .teamLogoBox {
-    width: 105px;
-    height: 105px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 15px;
-  }
-  .teamLogoBox img {
-    width: 88px;
-    height: 88px;
-    max-width: 88px;
-    max-height: 88px;
-    object-fit: contain;
-  }
-  .teamSide h2 {
-    margin: 0;
-    max-width: 260px;
-    font-size: 18px;
-    line-height: 1.25;
-    font-weight: 900;
-    color: #171717;
-  }
-  .teamLabel {
-    margin-top: 6px;
-    color: #aaa;
-    font-size: 9px;
-    font-weight: 900;
-    letter-spacing: 1.2px;
-  }
-  .scoreArea {
-    text-align: center;
-  }
-  .mainScore {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 13px;
-    color: #171717;
-    font-size: 48px;
-    line-height: 1;
-    font-weight: 950;
-    letter-spacing: -2px;
-  }
-  .mainScore b {
-    color: #c9c9c9;
-    font-size: 28px;
-    font-weight: 700;
-  }
-  .scoreStatus {
-    margin-top: 9px;
-    color: #777;
-    font-size: 11px;
-    font-weight: 900;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-  .scoreLive {
-    color: #f97316;
-    animation: liveText 1.5s infinite;
-  }
-  .halfTime {
-    margin-top: 8px;
-    color: #999;
-    font-size: 10px;
-    font-weight: 700;
-  }
-  .upcomingTime {
-    display: inline-block;
-    color: #f97316;
-    background: #fff7ed;
-    border: 1px solid #fed7aa;
-    border-radius: 12px;
-    padding: 10px 15px;
-    font-size: 21px;
-    font-weight: 950;
-    letter-spacing: 0.5px;
-  }
-  .dateText {
-    margin-top: 9px;
-    color: #999;
-    font-size: 10px;
-    font-weight: 700;
-  }
-  .heroFooter {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    border-top: 1px solid #eeeeee;
-    background: #fafafa;
-  }
-  .heroFooter > div {
-    min-width: 0;
-    padding: 13px 15px;
-    text-align: center;
-    border-right: 1px solid #eeeeee;
-  }
-  .heroFooter > div:last-child {
-    border-right: none;
-  }
-  .footerLabel {
-    display: block;
-    margin-bottom: 4px;
-    color: #aaa;
-    font-size: 8px;
-    font-weight: 900;
-    letter-spacing: 1px;
-  }
-  .heroFooter strong {
-    display: block;
-    color: #444;
-    font-size: 11px;
-    font-weight: 800;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .tabs {
-    display: flex;
-    gap: 7px;
-    margin-top: 18px;
-    padding-bottom: 2px;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .tabs::-webkit-scrollbar {
-    display: none;
-  }
-  .tabButton {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    border: 1px solid #e1e1e1;
-    background: #ffffff;
-    color: #777;
-    border-radius: 11px;
-    padding: 11px 15px;
-    font-size: 11px;
-    font-weight: 900;
-    cursor: pointer;
-    transition: 0.2s;
-  }
-  .tabButton:hover {
-    border-color: #f97316;
-    color: #f97316;
-  }
-  .tabButton.active {
-    background: #f97316;
-    color: white;
-    border-color: #f97316;
-    box-shadow: 0 5px 14px rgba(249, 115, 22, 0.2);
-  }
-  .contentCard {
-    margin-top: 10px;
-    min-height: 330px;
-    padding: 24px;
-    background: #ffffff;
-    border: 1px solid #e5e5e5;
-    border-radius: 18px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.035);
-  }
-  .sectionTitle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-bottom: 17px;
-    margin-bottom: 8px;
-    border-bottom: 1px solid #eeeeee;
-  }
-  .sectionTitle h3 {
-    margin: 0;
-    color: #171717;
-    font-size: 16px;
-    font-weight: 950;
-  }
-  .sectionTitle p {
-    margin: 4px 0 0;
-    color: #999;
-    font-size: 10px;
-  }
-  .timeline {
-    position: relative;
-    padding: 8px 0;
-  }
-  .eventRow {
-    display: grid;
-    grid-template-columns: 55px 28px minmax(0, 1fr);
-    min-height: 66px;
-    align-items: start;
-  }
-  .eventRow.awayEvent {
-    grid-template-columns: minmax(0, 1fr) 28px 55px;
-  }
-  .eventRow.awayEvent .eventContent {
-    grid-column: 1;
-    grid-row: 1;
-    text-align: right;
-  }
-  .eventRow.awayEvent .eventLine {
-    grid-column: 2;
-    grid-row: 1;
-  }
-  .eventRow.awayEvent .eventMinute {
-    grid-column: 3;
-    grid-row: 1;
-  }
-  .eventMinute {
-    display: flex;
-    justify-content: center;
-    padding-top: 4px;
-    color: #f97316;
-    font-size: 10px;
-    font-weight: 900;
-  }
-  .eventLine {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    height: 100%;
-    border-left: 1px solid #e7e7e7;
-  }
-  .eventDot {
-    position: absolute;
-    top: 1px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid #eeeeee;
-    border-radius: 50%;
-    background: #ffffff;
-    font-size: 13px;
-    z-index: 2;
-  }
-  .eventContent {
-    margin: 0 12px;
-    padding: 2px 0 12px;
-  }
-  .eventPlayer {
-    color: #222;
-    font-size: 12px;
-    font-weight: 900;
-  }
-  .eventDetail {
-    margin-top: 3px;
-    color: #777;
-    font-size: 10px;
-    font-weight: 600;
-  }
-  .eventAssist {
-    margin-top: 3px;
-    color: #999;
-    font-size: 9px;
-  }
-  .eventTeam {
-    margin-top: 4px;
-    color: #b0b0b0;
-    font-size: 9px;
-    font-weight: 700;
-  }
-  .statsTeams {
-    display: grid;
-    grid-template-columns: 1fr 60px 1fr;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 0 18px;
-    color: #555;
-    font-size: 11px;
-    font-weight: 900;
-    text-align: center;
-  }
-  .statsTeams span:first-child {
-    text-align: right;
-  }
-  .statsTeams span:last-child {
-    text-align: left;
-  }
-  .statsTeams span:nth-child(2) {
-    color: #f97316;
-    font-size: 9px;
-  }
-  .statsList {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .statItem {
-    width: 100%;
-  }
-  .statValues {
-    display: grid;
-    grid-template-columns: 70px 1fr 70px;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 7px;
-  }
-  .homeValue {
-    text-align: left;
-    color: #171717;
-    font-size: 12px;
-    font-weight: 900;
-  }
-  .awayValue {
-    text-align: right;
-    color: #171717;
-    font-size: 12px;
-    font-weight: 900;
-  }
-  .statName {
-    text-align: center;
-    color: #888;
-    font-size: 9px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-  }
-  .statBar {
-    display: flex;
-    width: 100%;
-    height: 6px;
-    gap: 3px;
-    overflow: hidden;
-    border-radius: 999px;
-    background: #eeeeee;
-  }
-  .statHome {
-    min-width: 3px;
-    background: #f97316;
-    border-radius: 999px;
-    transition: width 0.5s ease;
-  }
-  .statAway {
-    min-width: 3px;
-    background: #d5d5d5;
-    border-radius: 999px;
-    transition: width 0.5s ease;
-  }
-  .lineupsGrid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
-  }
-  .lineupBox {
-    border: 1px solid #e8e8e8;
-    border-radius: 14px;
-    overflow: hidden;
-    background: #fafafa;
-  }
-  .lineupHeader {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 15px;
-    background: #ffffff;
-    border-bottom: 1px solid #e8e8e8;
-  }
-  .lineupTeam {
-    color: #202020;
-    font-size: 13px;
-    font-weight: 900;
-  }
-  .lineupLabel {
-    margin-top: 3px;
-    color: #aaa;
-    font-size: 8px;
-    font-weight: 900;
-    letter-spacing: 1px;
-  }
-  .formation {
-    padding: 6px 8px;
-    color: #f97316;
-    background: #fff1e7;
-    border: 1px solid #fed7aa;
-    border-radius: 7px;
-    font-size: 10px;
-    font-weight: 900;
-  }
-  .playerList {
-    padding: 7px;
-  }
-  .playerRow {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 39px;
-    padding: 5px 7px;
-    border-bottom: 1px solid #eeeeee;
-  }
-  .playerRow:last-child {
-    border-bottom: none;
-  }
-  .playerNumber {
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 24px;
-    border-radius: 50%;
-    background: #ffffff;
-    border: 1px solid #e1e1e1;
-    color: #f97316;
-    font-size: 9px;
-    font-weight: 900;
-  }
-  .playerInfo {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    min-width: 0;
-    width: 100%;
-  }
-  .playerName {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: #333;
-    font-size: 11px;
-    font-weight: 750;
-  }
-  .playerPosition {
-    flex: 0 0 auto;
-    color: #aaa;
-    font-size: 8px;
-    font-weight: 800;
-  }
-  .substitutes {
-    border-top: 1px solid #e8e8e8;
-    background: #ffffff;
-  }
-  .substitutes summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px;
-    color: #777;
-    font-size: 10px;
-    font-weight: 900;
-    cursor: pointer;
-    list-style: none;
-  }
-  .substitutes summary::-webkit-details-marker {
-    display: none;
-  }
-  .substitutes summary span {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 21px;
-    height: 21px;
-    border-radius: 50%;
-    background: #f5f5f5;
-    color: #888;
-    font-size: 9px;
-  }
-  .substituteList {
-    padding: 0 10px 10px;
-  }
-  .substituteRow {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    min-height: 32px;
-    border-bottom: 1px solid #f0f0f0;
-    color: #555;
-    font-size: 10px;
-    font-weight: 700;
-  }
-  .substituteRow small {
-    margin-left: auto;
-    color: #aaa;
-    font-size: 8px;
-  }
-  .infoGrid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-  .infoItem {
-    padding: 15px;
-    border: 1px solid #e9e9e9;
-    border-radius: 12px;
-    background: #fafafa;
-  }
-  .infoItem span {
-    display: block;
-    margin-bottom: 6px;
-    color: #aaa;
-    font-size: 8px;
-    font-weight: 900;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
-  .infoItem strong {
-    display: block;
-    color: #333;
-    font-size: 11px;
-    font-weight: 800;
-    line-height: 1.4;
-  }
-  .emptyState {
-    min-height: 280px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 30px;
-  }
-  .emptyIcon {
-    width: 56px;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 13px;
-    border-radius: 50%;
-    background: #fff1e7;
-    color: #f97316;
-    font-size: 24px;
-  }
-  .emptyState h3 {
-    margin: 0;
-    color: #333;
-    font-size: 15px;
-    font-weight: 900;
-  }
-  .emptyState p {
-    max-width: 390px;
-    margin: 7px 0 0;
-    color: #999;
-    font-size: 11px;
-    line-height: 1.5;
-  }
-  .loadingScreen {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 13px;
-    color: #888;
-    font-size: 12px;
-    font-weight: 800;
-  }
-  .loadingSpinner {
-    width: 30px;
-    height: 30px;
-    border: 3px solid #ffe4d0;
-    border-top-color: #f97316;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  .notFound {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 30px;
-    text-align: center;
-  }
-  .notFoundIcon {
-    width: 70px;
-    height: 70px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 18px;
-    border-radius: 50%;
-    background: #fff1e7;
-    font-size: 30px;
-  }
-  .notFound h1 {
-    margin: 0;
-    color: #222;
-    font-size: 22px;
-    font-weight: 950;
-  }
-  .notFound p {
-    margin: 8px 0 20px;
-    color: #999;
-    font-size: 12px;
-  }
-  .backButton {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 11px 17px;
-    border-radius: 10px;
-    background: #f97316;
-    color: white;
-    text-decoration: none;
-    font-size: 11px;
-    font-weight: 900;
-    box-shadow: 0 5px 14px rgba(249, 115, 22, 0.22);
-  }
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-  @keyframes livePulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.35;
-    }
-  }
-  @keyframes liveText {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.55;
-    }
-  }
-  @media (max-width: 700px) {
-    .detailContainer {
-      width: calc(100% - 20px);
-      padding-top: 12px;
-    }
-    .headerInner {
-      min-height: 58px;
-      padding: 0 12px;
-    }
-    .detailBrand {
-      font-size: 14px;
-    }
-    .brandMark {
-      width: 29px;
-      height: 29px;
-      font-size: 13px;
-    }
-    .backLink {
-      font-size: 10px;
-    }
-    .heroTop {
-      padding: 14px;
-    }
-    .leagueName {
-      max-width: 180px;
-      font-size: 12px;
-    }
-    .heroLeagueLogo {
-      width: 29px;
-      height: 29px;
-      flex-basis: 29px;
-    }
-    .teamsArea {
-      grid-template-columns: minmax(0, 1fr) 95px minmax(0, 1fr);
-      gap: 5px;
-      padding: 27px 10px 24px;
-    }
-    .teamLogoBox {
-      width: 72px;
-      height: 72px;
-      margin-bottom: 10px;
-    }
-    .teamLogoBox img {
-      width: 60px;
-      height: 60px;
-      max-width: 60px;
-      max-height: 60px;
-    }
-    .teamSide h2 {
-      max-width: 115px;
-      font-size: 12px;
-    }
-    .mainScore {
-      gap: 7px;
-      font-size: 31px;
-      letter-spacing: -1px;
-    }
-    .mainScore b {
-      font-size: 18px;
-    }
-    .upcomingTime {
-      padding: 8px 10px;
-      font-size: 16px;
-    }
-    .dateText {
-      font-size: 8px;
-    }
-    .heroFooter {
-      grid-template-columns: 1fr;
-    }
-    .heroFooter > div {
-      border-right: none;
-      border-bottom: 1px solid #eeeeee;
-    }
-    .heroFooter > div:last-child {
-      border-bottom: none;
-    }
-    .tabs {
-      margin-top: 12px;
-    }
-    .tabButton {
-      padding: 9px 12px;
-      font-size: 10px;
-    }
-    .contentCard {
-      padding: 16px 12px;
-      border-radius: 14px;
-    }
-    .sectionTitle h3 {
-      font-size: 14px;
-    }
-    .sectionTitle p {
-      font-size: 9px;
-    }
-    .eventRow {
-      grid-template-columns: 42px 25px minmax(0, 1fr);
-    }
-    .eventRow.awayEvent {
-      grid-template-columns: minmax(0, 1fr) 25px 42px;
-    }
-    .eventContent {
-      margin: 0 7px;
-    }
-    .eventPlayer {
-      font-size: 10px;
-    }
-    .eventDetail,
-    .eventAssist {
-      font-size: 8px;
-    }
-    .lineupsGrid {
-      grid-template-columns: 1fr;
-    }
-    .infoGrid {
-      grid-template-columns: 1fr;
-    }
-    .statsTeams {
-      grid-template-columns: 1fr 40px 1fr;
-      font-size: 9px;
-    }
-    .statValues {
-      grid-template-columns: 45px 1fr 45px;
-    }
-    .statName {
-      font-size: 8px;
-    }
-  }
-`}</style>
+function formatStatisticName(type: string) {
+  const names: Record<string, string> = {
+    "Shots on Goal": "Shots on Goal",
+    "Shots off Goal": "Shots off Goal",
+    "Total Shots": "Total Shots",
+    "Blocked Shots": "Blocked Shots",
+    "Shots insidebox": "Shots Inside Box",
+    "Shots outsidebox": "Shots Outside Box",
+    Fouls: "Fouls",
+    "Corner Kicks": "Corners",
+    Offsides: "Offsides",
+    "Ball Possession": "Possession",
+    "Yellow Cards": "Yellow Cards",
+    "Red Cards": "Red Cards",
+    "Goalkeeper Saves": "Goalkeeper Saves",
+    "Total passes": "Total Passes",
+    "Passes accurate": "Accurate Passes",
+    "Passes %": "Pass Accuracy",
+    "expected_goals": "Expected Goals",
+  };
 
-);
+  return names[type] || type;
 }

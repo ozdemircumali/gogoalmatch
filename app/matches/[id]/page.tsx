@@ -5,20 +5,10 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 
 type MatchEvent = {
-  time: {
-    elapsed: number;
-    extra?: number;
-  };
-  team: {
-    id: number;
-    name: string;
-  };
-  player: {
-    name: string;
-  };
-  assist?: {
-    name: string;
-  };
+  time: { elapsed: number; extra?: number };
+  team: { id: number; name: string };
+  player: { name: string };
+  assist?: { name: string };
   type: string;
   detail: string;
 };
@@ -29,10 +19,7 @@ type MatchStatistic = {
 };
 
 type TeamStatistics = {
-  team: {
-    id: number;
-    name: string;
-  };
+  team: { id: number; name: string };
   statistics: MatchStatistic[];
 };
 
@@ -44,10 +31,7 @@ type Player = {
 };
 
 type Lineup = {
-  team: {
-    id: number;
-    name: string;
-  };
+  team: { id: number; name: string };
   formation: string;
   startXI: { player: Player }[];
   substitutes: { player: Player }[];
@@ -62,10 +46,7 @@ type MatchDetail = {
       short: string;
       elapsed: number | null;
     };
-    venue?: {
-      name?: string | null;
-      city?: string | null;
-    };
+    venue?: { name?: string | null; city?: string | null };
     referee?: string | null;
   };
   league: {
@@ -106,8 +87,8 @@ type MatchDetail = {
   lineups?: Lineup[];
 };
 
-const LIVE_STATUSES = ["1H", "2H", "HT", "ET", "BT", "P"];
-const FINISHED_STATUSES = ["FT", "AET", "PEN"];
+const LIVE = ["1H", "2H", "HT", "ET", "BT", "P"];
+const FINISHED = ["FT", "AET", "PEN"];
 
 type Tab = "SUMMARY" | "STATISTICS" | "LINEUPS";
 
@@ -122,71 +103,61 @@ export default function MatchDetailPage() {
   useEffect(() => {
     if (!id) return;
 
-    let stopped = false;
+    let cancelled = false;
 
-    const load = async () => {
+    async function load() {
       try {
-        const response = await fetch(`/api/fixtures/${id}`, {
+        const res = await fetch(`/api/fixtures/${id}`, {
           cache: "no-store",
         });
 
-        if (!response.ok) {
-          throw new Error("Match request failed");
-        }
+        if (!res.ok) throw new Error("Request failed");
 
-        const data = await response.json();
+        const data = await res.json();
 
-        if (!stopped) {
-          setMatch(
-            data?.response?.length > 0 ? data.response[0] : null
-          );
+        if (!cancelled) {
+          setMatch(data?.response?.[0] ?? null);
           setLoading(false);
         }
       } catch (error) {
         console.error(error);
-
-        if (!stopped) {
+        if (!cancelled) {
           setMatch(null);
           setLoading(false);
         }
       }
-    };
+    }
 
     load();
 
-    const interval = setInterval(load, 30000);
+    const timer = setInterval(load, 30000);
 
     return () => {
-      stopped = true;
-      clearInterval(interval);
+      cancelled = true;
+      clearInterval(timer);
     };
   }, [id]);
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#f5f6f8] flex items-center justify-center">
-        <div className="text-sm font-bold text-gray-500">
+      <main className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">
+        <span className="text-xs font-bold text-gray-500">
           Loading match...
-        </div>
+        </span>
       </main>
     );
   }
 
   if (!match) {
     return (
-      <main className="min-h-screen bg-[#f5f6f8] flex items-center justify-center px-4">
-        <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center max-w-sm w-full">
-          <h1 className="text-lg font-black text-gray-900">
+      <main className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-6 text-center">
+          <div className="font-black text-gray-900">
             Match Not Found
-          </h1>
-
-          <p className="text-sm text-gray-500 mt-2">
-            This match is unavailable.
-          </p>
-
+          </div>
           <Link
             href="/"
-            className="inline-block mt-6 bg-orange-500 hover:bg-orange-600 text-white px-5 py-3 rounded-xl text-sm font-bold"
+            className="inline-block mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg text-xs font-black"
           >
             Back to Matches
           </Link>
@@ -196,13 +167,13 @@ export default function MatchDetailPage() {
   }
 
   const status = match.fixture.status.short;
-  const live = LIVE_STATUSES.includes(status);
-  const finished = FINISHED_STATUSES.includes(status);
+  const isLive = LIVE.includes(status);
+  const isFinished = FINISHED.includes(status);
 
   const homeScore = match.goals.home ?? 0;
   const awayScore = match.goals.away ?? 0;
 
-  const time = new Date(match.fixture.date).toLocaleTimeString(
+  const kickoff = new Date(match.fixture.date).toLocaleTimeString(
     "en-US",
     {
       hour: "2-digit",
@@ -211,68 +182,55 @@ export default function MatchDetailPage() {
   );
 
   return (
-    <main className="min-h-screen bg-[#f5f6f8] text-gray-900 pb-10">
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+    <main className="min-h-screen bg-[#f3f4f6] text-gray-900">
+      <div className="max-w-4xl mx-auto">
+
+        {/* TOP BAR */}
+        <div className="h-11 px-3 flex items-center justify-between bg-[#111827] text-white">
           <Link
             href="/"
-            className="text-sm font-bold text-gray-500 hover:text-orange-500"
+            className="text-[11px] font-bold text-gray-300 hover:text-white"
           >
-            ← All Matches
+            ← Matches
           </Link>
 
-          <div className="flex items-center gap-2 max-w-[55%]">
-            {match.league.logo && (
-              <img
-                src={match.league.logo}
-                alt=""
-                className="w-6 h-6 object-contain"
-              />
-            )}
+          <div className="flex items-center gap-1.5 max-w-[60%]">
+            <img
+              src={match.league.logo}
+              alt=""
+              width={18}
+              height={18}
+              style={{
+                width: "18px",
+                height: "18px",
+                objectFit: "contain",
+              }}
+            />
 
-            <div className="min-w-0">
-              <div className="text-xs font-black truncate">
-                {match.league.name}
-              </div>
-
-              <div className="text-[10px] text-gray-400 truncate">
-                {match.league.country}
-              </div>
-            </div>
+            <span className="text-[10px] font-black truncate">
+              {match.league.name}
+            </span>
           </div>
         </div>
-      </header>
 
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 pt-4">
-        <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="h-1 bg-orange-500" />
+        {/* SCOREBOARD */}
+        <section className="bg-white border-b border-gray-200">
+          <div className="h-0.5 bg-orange-500" />
 
-          <div className="px-4 sm:px-10 py-7 sm:py-9">
-            <div className="text-center mb-8">
-              <span
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                  live
-                    ? "bg-red-50 text-red-600"
-                    : finished
-                      ? "bg-gray-100 text-gray-500"
-                      : "bg-orange-50 text-orange-600"
-                }`}
-              >
-                {live && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                )}
+          <div className="px-3 py-4 sm:px-8 sm:py-5">
 
-                {live
-                  ? match.fixture.status.elapsed != null
-                    ? `${match.fixture.status.elapsed}'`
-                    : "LIVE"
-                  : finished
-                    ? "FULL TIME"
-                    : time}
-              </span>
+            <div className="flex justify-center mb-3">
+              <Status
+                live={isLive}
+                finished={isFinished}
+                elapsed={match.fixture.status.elapsed}
+                status={status}
+                kickoff={kickoff}
+              />
             </div>
 
-            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-10">
+            <div className="grid grid-cols-[1fr_92px_1fr] sm:grid-cols-[1fr_130px_1fr] items-center">
+
               <Team
                 name={match.teams.home.name}
                 logo={match.teams.home.logo}
@@ -280,11 +238,11 @@ export default function MatchDetailPage() {
               />
 
               <div className="text-center">
-                {live || finished ? (
+                {isLive || isFinished ? (
                   <>
-                    <div className="text-4xl sm:text-6xl font-black tracking-tight">
+                    <div className="text-[32px] sm:text-[42px] leading-none font-black tracking-tight">
                       {homeScore}
-                      <span className="text-gray-300 mx-2 sm:mx-4">
+                      <span className="mx-1.5 text-gray-300">
                         -
                       </span>
                       {awayScore}
@@ -292,16 +250,27 @@ export default function MatchDetailPage() {
 
                     {match.score.halftime.home !== null &&
                       match.score.halftime.away !== null && (
-                        <div className="mt-2 text-[10px] font-bold text-gray-400">
-                          HALF TIME {match.score.halftime.home} -{" "}
+                        <div className="mt-1.5 text-[8px] font-bold text-gray-400">
+                          HT {match.score.halftime.home} -{" "}
                           {match.score.halftime.away}
                         </div>
                       )}
                   </>
                 ) : (
-                  <div className="text-2xl sm:text-3xl font-black">
-                    {time}
-                  </div>
+                  <>
+                    <div className="text-xl font-black">
+                      {kickoff}
+                    </div>
+                    <div className="text-[8px] text-gray-400 mt-1 font-bold">
+                      {new Date(match.fixture.date).toLocaleDateString(
+                        "en-US",
+                        {
+                          month: "short",
+                          day: "numeric",
+                        }
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
 
@@ -314,88 +283,57 @@ export default function MatchDetailPage() {
           </div>
         </section>
 
-        <div className="mt-4 bg-white border border-gray-200 rounded-2xl p-1.5 flex">
-          <Tab
-            active={tab === "SUMMARY"}
-            onClick={() => setTab("SUMMARY")}
-          >
-            Summary
-          </Tab>
+        {/* TABS */}
+        <div className="px-2 pt-2">
+          <div className="bg-white border border-gray-200 rounded-lg p-0.5 flex">
+            <Tab
+              active={tab === "SUMMARY"}
+              onClick={() => setTab("SUMMARY")}
+            >
+              Summary
+            </Tab>
 
-          <Tab
-            active={tab === "STATISTICS"}
-            onClick={() => setTab("STATISTICS")}
-          >
-            Statistics
-          </Tab>
+            <Tab
+              active={tab === "STATISTICS"}
+              onClick={() => setTab("STATISTICS")}
+            >
+              Statistics
+            </Tab>
 
-          <Tab
-            active={tab === "LINEUPS"}
-            onClick={() => setTab("LINEUPS")}
-          >
-            Lineups
-          </Tab>
+            <Tab
+              active={tab === "LINEUPS"}
+              onClick={() => setTab("LINEUPS")}
+            >
+              Lineups
+            </Tab>
+          </div>
         </div>
 
-        <div className="mt-4">
+        {/* CONTENT */}
+        <div className="px-2 pt-2 pb-6">
           {tab === "SUMMARY" && (
             <Summary
-              events={match.events || []}
+              events={match.events ?? []}
               homeId={match.teams.home.id}
             />
           )}
 
           {tab === "STATISTICS" && (
             <Statistics
-              statistics={match.statistics || []}
+              statistics={match.statistics ?? []}
               homeId={match.teams.home.id}
             />
           )}
 
           {tab === "LINEUPS" && (
             <Lineups
-              lineups={match.lineups || []}
+              lineups={match.lineups ?? []}
               homeId={match.teams.home.id}
             />
           )}
+
+          <Information match={match} />
         </div>
-
-        <section className="mt-4 bg-white border border-gray-200 rounded-2xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h2 className="text-sm font-black">Match Information</h2>
-          </div>
-
-          <div className="grid grid-cols-2">
-            <Info
-              label="Venue"
-              value={
-                match.fixture.venue?.name ||
-                "Not available"
-              }
-            />
-
-            <Info
-              label="City"
-              value={
-                match.fixture.venue?.city ||
-                "Not available"
-              }
-            />
-
-            <Info
-              label="Referee"
-              value={
-                match.fixture.referee ||
-                "Not available"
-              }
-            />
-
-            <Info
-              label="Competition"
-              value={match.league.name}
-            />
-          </div>
-        </section>
       </div>
     </main>
   );
@@ -411,18 +349,36 @@ function Team({
   winner: boolean | null;
 }) {
   return (
-    <div className="flex flex-col items-center text-center min-w-0">
-      <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+    <div className="flex flex-col items-center justify-center min-w-0 px-1">
+      <div
+        style={{
+          width: "38px",
+          height: "38px",
+          minWidth: "38px",
+          minHeight: "38px",
+          maxWidth: "38px",
+          maxHeight: "38px",
+        }}
+        className="flex items-center justify-center"
+      >
         <img
           src={logo}
-          alt={name}
-          className="w-full h-full object-contain"
+          alt=""
+          width={38}
+          height={38}
+          style={{
+            width: "38px",
+            height: "38px",
+            maxWidth: "38px",
+            maxHeight: "38px",
+            objectFit: "contain",
+          }}
         />
       </div>
 
       <div
-        className={`mt-3 text-xs sm:text-sm max-w-[140px] sm:max-w-[210px] leading-tight ${
-          winner
+        className={`mt-1.5 text-[10px] sm:text-[11px] leading-tight text-center truncate w-full max-w-[125px] ${
+          winner === true
             ? "font-black text-gray-900"
             : "font-bold text-gray-600"
         }`}
@@ -430,6 +386,43 @@ function Team({
         {name}
       </div>
     </div>
+  );
+}
+
+function Status({
+  live,
+  finished,
+  elapsed,
+  status,
+  kickoff,
+}: {
+  live: boolean;
+  finished: boolean;
+  elapsed: number | null;
+  status: string;
+  kickoff: string;
+}) {
+  if (live) {
+    return (
+      <span className="inline-flex items-center gap-1 bg-red-50 text-red-600 rounded-full px-2.5 py-1 text-[9px] font-black">
+        <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+        {elapsed !== null ? `${elapsed}'` : "LIVE"}
+      </span>
+    );
+  }
+
+  if (finished) {
+    return (
+      <span className="bg-gray-100 text-gray-500 rounded-full px-2.5 py-1 text-[9px] font-black">
+        {status === "PEN" ? "PENALTIES" : "FULL TIME"}
+      </span>
+    );
+  }
+
+  return (
+    <span className="bg-orange-50 text-orange-600 rounded-full px-2.5 py-1 text-[9px] font-black">
+      {kickoff}
+    </span>
   );
 }
 
@@ -446,10 +439,10 @@ function Tab({
     <button
       type="button"
       onClick={onClick}
-      className={`flex-1 py-3 rounded-xl text-xs font-black transition ${
+      className={`flex-1 h-8 rounded-md text-[10px] font-black ${
         active
           ? "bg-orange-500 text-white"
-          : "text-gray-500 hover:bg-gray-50"
+          : "text-gray-500"
       }`}
     >
       {children}
@@ -465,84 +458,109 @@ function Summary({
   homeId: number;
 }) {
   const sorted = [...events].sort(
-    (a, b) => a.time.elapsed - b.time.elapsed
+    (a, b) =>
+      a.time.elapsed - b.time.elapsed ||
+      (a.time.extra || 0) - (b.time.extra || 0)
   );
 
-  if (sorted.length === 0) {
-    return (
-      <Empty
-        title="No Events"
-        text="No match events are available."
-      />
-    );
-  }
-
   return (
-    <section className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-100">
-        <h2 className="text-sm font-black">Match Events</h2>
-      </div>
+    <section className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <Header title="Match Events" />
 
-      <div className="p-4 sm:p-6 space-y-2">
-        {sorted.map((event, index) => {
-          const home = event.team.id === homeId;
-          const goal = event.type.toLowerCase() === "goal";
-          const card = event.type.toLowerCase() === "card";
+      {sorted.length === 0 ? (
+        <div className="py-8 text-center">
+          <div className="text-[11px] font-black text-gray-500">
+            No events
+          </div>
+        </div>
+      ) : (
+        <div className="divide-y divide-gray-100">
+          {sorted.map((event, index) => {
+            const home = event.team.id === homeId;
+            const goal =
+              event.type.toLowerCase() === "goal";
+            const card =
+              event.type.toLowerCase() === "card";
 
-          return (
-            <div
-              key={index}
-              className={`flex items-center gap-3 ${
-                home ? "" : "flex-row-reverse"
-              }`}
-            >
-              <div className="w-10 text-center shrink-0">
-                <span className="text-[11px] font-black text-orange-500">
-                  {event.time.elapsed}
-                  {event.time.extra
-                    ? `+${event.time.extra}`
-                    : ""}
-                  '
-                </span>
-              </div>
-
+            return (
               <div
-                className={`flex-1 flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 ${
-                  home ? "" : "flex-row-reverse text-right"
-                }`}
+                key={`${event.time.elapsed}-${index}`}
+                className="grid grid-cols-[42px_1fr_42px] items-center min-h-[48px] px-3"
               >
                 <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black ${
-                    goal
-                      ? "bg-orange-100 text-orange-600"
-                      : card
-                        ? "bg-yellow-50 text-yellow-600"
-                        : "bg-gray-100 text-gray-500"
+                  className={`text-[10px] font-black ${
+                    home
+                      ? "text-right pr-2"
+                      : "text-left pl-2"
                   }`}
                 >
-                  {goal ? "G" : card ? "C" : "•"}
+                  {home
+                    ? `${event.time.elapsed}${event.time.extra ? `+${event.time.extra}` : ""}'`
+                    : ""}
                 </div>
 
-                <div>
-                  <div className="text-xs font-black text-gray-900">
-                    {event.player?.name || "Unknown"}
-                  </div>
-
-                  <div className="text-[10px] text-gray-400 mt-0.5">
-                    {event.detail || event.type}
-                  </div>
-
-                  {event.assist?.name && (
-                    <div className="text-[10px] text-gray-500 mt-1">
-                      Assist: {event.assist.name}
-                    </div>
+                <div
+                  className={`flex items-center gap-2 ${
+                    home
+                      ? "justify-end text-right"
+                      : "justify-start"
+                  }`}
+                >
+                  {!home && (
+                    <span className="text-[10px] font-black text-gray-500 w-7">
+                      {event.time.elapsed}
+                      {event.time.extra
+                        ? `+${event.time.extra}`
+                        : ""}
+                      '
+                    </span>
                   )}
+
+                  <span
+                    className={`w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[8px] font-black ${
+                      goal
+                        ? "bg-orange-500 text-white"
+                        : card
+                          ? "bg-yellow-400 text-white"
+                          : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
+                    {goal ? "G" : card ? "C" : "•"}
+                  </span>
+
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-black text-gray-800 truncate">
+                      {event.player?.name || "Unknown"}
+                    </div>
+
+                    <div className="text-[8px] text-gray-400 truncate">
+                      {event.detail || event.type}
+                    </div>
+
+                    {event.assist?.name && (
+                      <div className="text-[8px] text-gray-400 truncate">
+                        Assist: {event.assist.name}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div
+                  className={`text-[10px] font-black ${
+                    !home
+                      ? "text-left pl-2"
+                      : "text-right pr-2"
+                  }`}
+                >
+                  {!home
+                    ? `${event.time.elapsed}${event.time.extra ? `+${event.time.extra}` : ""}'`
+                    : ""}
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }
@@ -557,8 +575,8 @@ function Statistics({
   if (statistics.length < 2) {
     return (
       <Empty
-        title="Statistics Unavailable"
-        text="Statistics are not available for this match."
+        title="Statistics unavailable"
+        text="No statistics are available."
       />
     );
   }
@@ -571,60 +589,78 @@ function Statistics({
     statistics.find((x) => x.team.id !== homeId) ||
     statistics[1];
 
-  const awayValues = new Map(
+  const awayMap = new Map(
     away.statistics.map((x) => [x.type, x.value])
   );
 
   return (
-    <section className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-100">
-        <h2 className="text-sm font-black">Match Statistics</h2>
-      </div>
+    <section className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <Header title="Statistics" />
 
-      <div className="p-5 sm:p-7 space-y-6">
-        {home.statistics.map((item, index) => {
-          const awayValue = awayValues.get(item.type);
+      <div className="px-3 py-4">
+        <div className="grid grid-cols-3 text-[9px] font-black mb-4">
+          <span className="truncate">
+            {home.team.name}
+          </span>
 
-          const h = numberValue(item.value);
-          const a = numberValue(awayValue);
-          const total = h + a;
+          <span className="text-center text-gray-400">
+            STATISTICS
+          </span>
 
-          const hp = total > 0 ? (h / total) * 100 : 50;
+          <span className="text-right truncate">
+            {away.team.name}
+          </span>
+        </div>
 
-          return (
-            <div key={`${item.type}-${index}`}>
-              <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center mb-2">
-                <span className="text-xs font-black">
-                  {item.value ?? 0}
-                </span>
+        <div className="space-y-4">
+          {home.statistics.map((item, index) => {
+            const awayValue = awayMap.get(item.type);
 
-                <span className="text-[10px] font-bold text-gray-400 text-center">
-                  {item.type}
-                </span>
+            const h = numberValue(item.value);
+            const a = numberValue(awayValue);
+            const total = h + a;
+            const homePercent =
+              total > 0 ? (h / total) * 100 : 50;
 
-                <span className="text-xs font-black text-right">
-                  {awayValue ?? 0}
-                </span>
-              </div>
+            return (
+              <div key={`${item.type}-${index}`}>
+                <div className="grid grid-cols-[35px_1fr_35px] items-center mb-1">
+                  <span className="text-[9px] font-black">
+                    {item.value ?? 0}
+                  </span>
 
-              <div className="flex gap-1 h-2">
-                <div className="flex-1 bg-gray-100 rounded-l-full overflow-hidden">
-                  <div
-                    className="h-full bg-orange-500"
-                    style={{ width: `${hp}%` }}
-                  />
+                  <span className="text-[8px] font-bold text-gray-400 text-center truncate">
+                    {item.type}
+                  </span>
+
+                  <span className="text-[9px] font-black text-right">
+                    {awayValue ?? 0}
+                  </span>
                 </div>
 
-                <div className="flex-1 bg-gray-100 rounded-r-full overflow-hidden">
-                  <div
-                    className="h-full bg-gray-300"
-                    style={{ width: `${100 - hp}%` }}
-                  />
+                <div className="grid grid-cols-2 gap-1 h-1.5">
+                  <div className="bg-gray-100 rounded-l-full overflow-hidden">
+                    <div
+                      className="h-full bg-orange-500"
+                      style={{
+                        width: `${homePercent}%`,
+                      }}
+                    />
+                  </div>
+
+                  <div className="bg-gray-100 rounded-r-full overflow-hidden">
+                    <div
+                      className="h-full bg-gray-400"
+                      style={{
+                        width: `${100 - homePercent}%`,
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </section>
   );
@@ -640,7 +676,7 @@ function Lineups({
   if (lineups.length === 0) {
     return (
       <Empty
-        title="Lineups Unavailable"
+        title="Lineups unavailable"
         text="Lineup information is not available yet."
       />
     );
@@ -655,9 +691,8 @@ function Lineups({
     lineups[1];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
       <LineupCard lineup={home} />
-
       {away && <LineupCard lineup={away} />}
     </div>
   );
@@ -665,23 +700,23 @@ function Lineups({
 
 function LineupCard({ lineup }: { lineup: Lineup }) {
   return (
-    <section className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
-        <h2 className="text-sm font-black truncate">
+    <section className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="px-3 py-2.5 border-b border-gray-100 flex items-center justify-between">
+        <span className="text-[10px] font-black truncate">
           {lineup.team.name}
-        </h2>
+        </span>
 
-        <span className="text-[10px] font-black text-orange-500 bg-orange-50 px-2.5 py-1 rounded-lg">
-          {lineup.formation || "Lineup"}
+        <span className="text-[8px] font-black text-orange-600 bg-orange-50 rounded px-1.5 py-1">
+          {lineup.formation || "XI"}
         </span>
       </div>
 
-      <div className="p-5">
-        <div className="text-[10px] uppercase tracking-wider font-black text-gray-400 mb-3">
+      <div className="p-2.5">
+        <div className="text-[8px] font-black uppercase text-gray-400 mb-1.5">
           Starting XI
         </div>
 
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           {lineup.startXI.map((item, index) => (
             <Player
               key={`${item.player.id}-${index}`}
@@ -692,11 +727,11 @@ function LineupCard({ lineup }: { lineup: Lineup }) {
 
         {lineup.substitutes.length > 0 && (
           <>
-            <div className="text-[10px] uppercase tracking-wider font-black text-gray-400 mt-6 mb-3">
+            <div className="text-[8px] font-black uppercase text-gray-400 mt-4 mb-1.5">
               Substitutes
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               {lineup.substitutes.map((item, index) => (
                 <Player
                   key={`sub-${item.player.id}-${index}`}
@@ -713,18 +748,62 @@ function LineupCard({ lineup }: { lineup: Lineup }) {
 
 function Player({ player }: { player: Player }) {
   return (
-    <div className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg">
-      <span className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-[10px] font-black text-orange-500">
+    <div className="h-7 px-2 flex items-center gap-2 bg-gray-50 rounded">
+      <span className="w-5 h-5 shrink-0 bg-white border border-gray-200 rounded flex items-center justify-center text-[8px] font-black text-orange-500">
         {player.number}
       </span>
 
-      <span className="text-xs font-bold text-gray-700 flex-1 truncate">
+      <span className="text-[9px] font-bold truncate flex-1">
         {player.name}
       </span>
 
-      <span className="text-[9px] font-black text-gray-400">
+      <span className="text-[7px] font-black text-gray-400">
         {player.pos}
       </span>
+    </div>
+  );
+}
+
+function Information({
+  match,
+}: {
+  match: MatchDetail;
+}) {
+  return (
+    <section className="mt-2 bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <Header title="Match Information" />
+
+      <div className="grid grid-cols-2 sm:grid-cols-4">
+        <Info
+          label="Venue"
+          value={match.fixture.venue?.name || "N/A"}
+        />
+
+        <Info
+          label="City"
+          value={match.fixture.venue?.city || "N/A"}
+        />
+
+        <Info
+          label="Referee"
+          value={match.fixture.referee || "N/A"}
+        />
+
+        <Info
+          label="Competition"
+          value={match.league.name}
+        />
+      </div>
+    </section>
+  );
+}
+
+function Header({ title }: { title: string }) {
+  return (
+    <div className="h-10 px-3 flex items-center border-b border-gray-100">
+      <h2 className="text-[10px] font-black uppercase tracking-wide">
+        {title}
+      </h2>
     </div>
   );
 }
@@ -737,12 +816,12 @@ function Info({
   value: string;
 }) {
   return (
-    <div className="px-5 py-4 border-b border-gray-100">
-      <div className="text-[9px] uppercase tracking-wider font-black text-gray-400">
+    <div className="px-3 py-2.5 border-b border-gray-100 min-w-0">
+      <div className="text-[7px] uppercase font-black tracking-wide text-gray-400">
         {label}
       </div>
 
-      <div className="text-xs font-bold text-gray-700 mt-1">
+      <div className="mt-0.5 text-[9px] font-bold text-gray-700 truncate">
         {value}
       </div>
     </div>
@@ -757,24 +836,26 @@ function Empty({
   text: string;
 }) {
   return (
-    <section className="bg-white border border-gray-200 rounded-2xl p-12 text-center">
-      <h2 className="text-sm font-black text-gray-800">
+    <section className="bg-white border border-gray-200 rounded-lg p-8 text-center">
+      <div className="text-[10px] font-black text-gray-600">
         {title}
-      </h2>
+      </div>
 
-      <p className="text-xs text-gray-400 mt-2">
+      <div className="text-[9px] text-gray-400 mt-1">
         {text}
-      </p>
+      </div>
     </section>
   );
 }
 
-function numberValue(value: number | string | null | undefined) {
-  if (value === null || value === undefined) {
-    return 0;
-  }
+function numberValue(
+  value: number | string | null | undefined
+) {
+  if (value === null || value === undefined) return 0;
 
-  const number = parseFloat(String(value).replace("%", ""));
+  const n = parseFloat(
+    String(value).replace("%", "")
+  );
 
-  return Number.isFinite(number) ? number : 0;
+  return Number.isFinite(n) ? n : 0;
 }

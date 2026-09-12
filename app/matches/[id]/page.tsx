@@ -168,10 +168,10 @@ export default function MatchDetailPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-900 text-gray-100 flex items-center justify-center">
+      <main className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
-          <span className="text-xs font-bold uppercase tracking-widest text-gray-400">
+          <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
             Loading Match Center...
           </span>
         </div>
@@ -181,7 +181,7 @@ export default function MatchDetailPage() {
 
   if (!match) {
     return (
-      <main className="min-h-screen bg-gray-900 text-gray-100 py-12 px-4">
+      <main className="min-h-screen bg-slate-950 text-slate-100 py-12 px-4">
         <div className="mx-auto max-w-xl text-center">
           <Link
             href="/"
@@ -189,9 +189,9 @@ export default function MatchDetailPage() {
           >
             ← Back to Matches
           </Link>
-          <div className="rounded-2xl border border-gray-800 bg-gray-800/50 p-8 backdrop-blur">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8">
             <h1 className="text-xl font-black text-white">Match Not Found</h1>
-            <p className="mt-2 text-xs text-gray-400">
+            <p className="mt-2 text-xs text-slate-400">
               The requested match data could not be retrieved or is unavailable.
             </p>
           </div>
@@ -228,7 +228,7 @@ export default function MatchDetailPage() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased">
-      {/* Top Header Navigation */}
+      {/* Top Navigation */}
       <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
           <Link href="/" className="flex items-center gap-2.5">
@@ -244,7 +244,7 @@ export default function MatchDetailPage() {
 
           <Link
             href="/"
-            className="rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-1.5 text-xs font-bold text-slate-300 hover:bg-slate-700 hover:text-white transition"
+            className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-300 hover:bg-slate-700 hover:text-white transition"
           >
             ← Matches
           </Link>
@@ -252,7 +252,7 @@ export default function MatchDetailPage() {
       </header>
 
       <div className="mx-auto max-w-5xl px-3 py-4 sm:px-4 sm:py-6">
-        {/* Breadcrumb / League Name */}
+        {/* Breadcrumb */}
         <div className="mb-4 flex items-center gap-2 text-xs font-semibold text-slate-400">
           <Link href="/" className="text-orange-500 hover:underline">
             Home
@@ -261,19 +261,28 @@ export default function MatchDetailPage() {
           <span className="text-slate-300">{match.league.name}</span>
         </div>
 
-        {/* Primary Scoreboard Card */}
+        {/* Main Scoreboard Card */}
         <section className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600" />
 
           {/* League Bar */}
-          <div className="flex items-center justify-between border-b border-slate-800/80 bg-slate-900/50 px-5 py-3">
+          <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/50 px-5 py-3">
             <div className="flex items-center gap-3">
               {match.league.logo && (
-                <img
-                  src={match.league.logo}
-                  alt={match.league.name}
-                  className="h-6 w-6 object-contain"
-                />
+                <div style={{ width: "24px", height: "24px", flexShrink: 0 }}>
+                  <img
+                    src={match.league.logo}
+                    alt={match.league.name}
+                    style={{
+                      width: "24px",
+                      height: "24px",
+                      maxWidth: "24px",
+                      maxHeight: "24px",
+                      objectFit: "contain",
+                      display: "block",
+                    }}
+                  />
+                </div>
               )}
               <div>
                 <div className="text-xs font-bold text-slate-200">
@@ -285,7 +294,7 @@ export default function MatchDetailPage() {
               </div>
             </div>
 
-            {/* Match Status Badge */}
+            {/* Status Badge */}
             <div>
               {isLive ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500/10 border border-red-500/30 px-3 py-1 text-[10px] font-black text-red-500">
@@ -309,11 +318,28 @@ export default function MatchDetailPage() {
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
               {/* Home Team */}
               <div className="flex flex-col items-center sm:items-end text-center sm:text-right">
-                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-slate-800 p-2 border border-slate-700/50 flex items-center justify-center">
+                <div
+                  style={{
+                    width: "56px",
+                    height: "56px",
+                    minWidth: "56px",
+                    maxWidth: "56px",
+                    minHeight: "56px",
+                    maxHeight: "56px",
+                  }}
+                  className="rounded-full bg-slate-800 p-2 border border-slate-700/50 flex items-center justify-center shrink-0 overflow-hidden"
+                >
                   <img
                     src={match.teams.home.logo}
                     alt={match.teams.home.name}
-                    className="max-h-full max-w-full object-contain"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      maxWidth: "40px",
+                      maxHeight: "40px",
+                      objectFit: "contain",
+                      display: "block",
+                    }}
                   />
                 </div>
                 <h2 className="mt-3 text-sm sm:text-lg font-black tracking-tight text-white">
@@ -324,7 +350,7 @@ export default function MatchDetailPage() {
                 </span>
               </div>
 
-              {/* Score Core */}
+              {/* Score Box */}
               <div className="flex flex-col items-center px-2">
                 {isLive || isFinished ? (
                   <>
@@ -353,11 +379,28 @@ export default function MatchDetailPage() {
 
               {/* Away Team */}
               <div className="flex flex-col items-center sm:items-start text-center sm:text-left">
-                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-slate-800 p-2 border border-slate-700/50 flex items-center justify-center">
+                <div
+                  style={{
+                    width: "56px",
+                    height: "56px",
+                    minWidth: "56px",
+                    maxWidth: "56px",
+                    minHeight: "56px",
+                    maxHeight: "56px",
+                  }}
+                  className="rounded-full bg-slate-800 p-2 border border-slate-700/50 flex items-center justify-center shrink-0 overflow-hidden"
+                >
                   <img
                     src={match.teams.away.logo}
                     alt={match.teams.away.name}
-                    className="max-h-full max-w-full object-contain"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      maxWidth: "40px",
+                      maxHeight: "40px",
+                      objectFit: "contain",
+                      display: "block",
+                    }}
                   />
                 </div>
                 <h2 className="mt-3 text-sm sm:text-lg font-black tracking-tight text-white">
@@ -371,7 +414,7 @@ export default function MatchDetailPage() {
           </div>
         </section>
 
-        {/* Venue / Info Grid */}
+        {/* Match Info Grid */}
         <section className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <InfoCard label="DATE" value={formattedDate} />
           <InfoCard label="KICK-OFF" value={matchTime} />
@@ -386,7 +429,7 @@ export default function MatchDetailPage() {
           />
         </section>
 
-        {/* Tab Selector */}
+        {/* Tab Navigation */}
         <div className="mt-4 border-b border-slate-800 flex gap-2">
           <TabNavButton
             active={activeTab === "STATS"}
@@ -408,7 +451,7 @@ export default function MatchDetailPage() {
           </TabNavButton>
         </div>
 
-        {/* Tab Content Section */}
+        {/* Tab Content */}
         <section className="mt-4 rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-6 shadow-xl">
           {activeTab === "STATS" && (
             <MatchStatisticsSection
@@ -485,7 +528,6 @@ function TabNavButton({
   );
 }
 
-{/* Match Statistics Component with Visual Dominance Bars */}
 function MatchStatisticsSection({
   statistics,
   homeTeamName,
@@ -517,7 +559,6 @@ function MatchStatisticsSection({
 
   return (
     <div className="space-y-6">
-      {/* Header Teams Label */}
       <div className="flex items-center justify-between text-xs font-black text-slate-300 border-b border-slate-800 pb-3">
         <span className="w-1/3 truncate text-left">{homeTeamName}</span>
         <span className="w-1/3 text-center text-[10px] tracking-widest text-slate-400 uppercase">
@@ -526,7 +567,6 @@ function MatchStatisticsSection({
         <span className="w-1/3 truncate text-right">{awayTeamName}</span>
       </div>
 
-      {/* Stats List */}
       <div className="space-y-5">
         {combinedStats.map((stat, idx) => {
           const homeVal = parseStatValue(stat.home);
@@ -561,7 +601,6 @@ function MatchStatisticsSection({
                 </span>
               </div>
 
-              {/* Progress Bar Container */}
               <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-slate-800">
                 <div
                   className={`h-full transition-all duration-300 ${
@@ -600,7 +639,6 @@ function formatStatLabel(label: string): string {
     .trim();
 }
 
-{/* Match Timeline / Summary Component */}
 function MatchEventsSummary({
   events,
   homeId,
@@ -636,7 +674,6 @@ function MatchEventsSummary({
               key={idx}
               className="grid grid-cols-[1fr_60px_1fr] items-center py-3 text-xs"
             >
-              {/* Home Side Event */}
               <div className="text-right pr-3">
                 {isHome && (
                   <div>
@@ -650,7 +687,6 @@ function MatchEventsSummary({
                 )}
               </div>
 
-              {/* Minute & Badge */}
               <div className="flex flex-col items-center">
                 <span className="text-[10px] font-black text-orange-500">
                   {timeDisplay}
@@ -660,7 +696,6 @@ function MatchEventsSummary({
                 </span>
               </div>
 
-              {/* Away Side Event */}
               <div className="text-left pl-3">
                 {!isHome && (
                   <div>
@@ -681,7 +716,6 @@ function MatchEventsSummary({
   );
 }
 
-{/* Lineups Component */}
 function MatchLineupsSection({
   lineups,
   homeId,

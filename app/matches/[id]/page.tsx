@@ -4,39 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
-type MatchEvent = {
-  time: { elapsed: number; extra?: number };
-  team: { id: number; name: string };
-  player: { name: string };
-  assist?: { name: string };
-  type: string;
-  detail: string;
-};
-
-type MatchStatistic = {
-  type: string;
-  value: number | string | null;
-};
-
-type TeamStatistics = {
-  team: { id: number; name: string };
-  statistics: MatchStatistic[];
-};
-
-type Player = {
-  id: number;
-  name: string;
-  number: number;
-  pos: string;
-};
-
-type Lineup = {
-  team: { id: number; name: string };
-  formation: string;
-  startXI: { player: Player }[];
-  substitutes: { player: Player }[];
-};
-
 type MatchDetail = {
   fixture: {
     id: number;
@@ -46,7 +13,10 @@ type MatchDetail = {
       short: string;
       elapsed: number | null;
     };
-    venue?: { name?: string | null; city?: string | null };
+    venue?: {
+      name?: string | null;
+      city?: string | null;
+    };
     referee?: string | null;
   };
   league: {
@@ -82,351 +52,426 @@ type MatchDetail = {
       away: number | null;
     };
   };
-  events?: MatchEvent[];
-  statistics?: TeamStatistics[];
-  lineups?: Lineup[];
+  events?: Array<{
+    time: {
+      elapsed: number;
+      extra?: number;
+    };
+    team: {
+      id: number;
+      name: string;
+    };
+    player: {
+      name: string;
+    };
+    assist?: {
+      name: string;
+    };
+    type: string;
+    detail: string;
+  }>;
+  statistics?: Array<{
+    team: {
+      id: number;
+      name: string;
+    };
+    statistics: Array<{
+      type: string;
+      value: number | string | null;
+    }>;
+  }>;
+  lineups?: Array<{
+    team: {
+      id: number;
+      name: string;
+    };
+    formation: string;
+    startXI: Array<{
+      player: {
+        id: number;
+        name: string;
+        number: number;
+        pos: string;
+      };
+    }>;
+    substitutes: Array<{
+      player: {
+        id: number;
+        name: string;
+        number: number;
+        pos: string;
+      };
+    }>;
+  }>;
 };
 
-const LIVE = ["1H", "2H", "HT", "ET", "BT", "P"];
-const FINISHED = ["FT", "AET", "PEN"];
+const LIVE_STATUSES = ["1H", "2H", "HT", "ET", "BT", "P"];
+const FINISHED_STATUSES = ["FT", "AET", "PEN"];
 
-type Tab = "SUMMARY" | "STATISTICS" | "LINEUPS";
+type SubTab = "SUMMARY" | "STATS" | "LINEUPS";
 
 export default function MatchDetailPage() {
   const params = useParams();
-  const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const id = params?.id;
 
   const [match, setMatch] = useState<MatchDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<Tab>("SUMMARY");
+  const [activeTab, setActiveTab] = useState<SubTab>("SUMMARY");
 
-  useEffect(() => {
+  async function loadMatchDetail() {
     if (!id) return;
 
-    let cancelled = false;
+    try {
+      const response = await fetch(`/api/fixtures/${id}`, {
+        cache: "no-store",
+      });
 
-    async function load() {
-      try {
-        const res = await fetch(`/api/fixtures/${id}`, {
-          cache: "no-store",
-        });
+      const data = await response.json();
 
-        if (!res.ok) throw new Error("Request failed");
-
-        const data = await res.json();
-
-        if (!cancelled) {
-          setMatch(data?.response?.[0] ?? null);
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error(error);
-        if (!cancelled) {
-          setMatch(null);
-          setLoading(false);
-        }
+      if (data.response && data.response.length > 0) {
+        setMatch(data.response[0]);
+      } else {
+        setMatch(null);
       }
+    } catch (error) {
+      console.error("Failed to load match detail:", error);
+      setMatch(null);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    load();
+  useEffect(() => {
+    loadMatchDetail();
 
-    const timer = setInterval(load, 30000);
+    const interval = setInterval(loadMatchDetail, 30000);
 
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
+    return () => clearInterval(interval);
   }, [id]);
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">
-        <span className="text-xs font-bold text-gray-500">
-          Loading match...
-        </span>
+      <main className="page">
+        <div className="loadingScreen">
+          <div className="loadingCard">
+            <div className="loadingLogo">G</div>
+            <div className="loadingText">Loading match details...</div>
+          </div>
+        </div>
+
+        <PageStyles />
       </main>
     );
   }
 
   if (!match) {
     return (
-      <main className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-6 text-center">
-          <div className="font-black text-gray-900">
-            Match Not Found
+      <main className="page">
+        <div className="loadingScreen">
+          <div className="errorCard">
+            <div className="errorIcon">!</div>
+
+            <h1>Match Not Found</h1>
+
+            <p>
+              The match information could not be found or is no longer
+              available.
+            </p>
+
+            <Link href="/" className="primaryButton">
+              Back to Matches
+            </Link>
           </div>
-          <Link
-            href="/"
-            className="inline-block mt-4 px-4 py-2 bg-orange-500 text-white rounded-lg text-xs font-black"
-          >
-            Back to Matches
-          </Link>
         </div>
+
+        <PageStyles />
       </main>
     );
   }
 
   const status = match.fixture.status.short;
-  const isLive = LIVE.includes(status);
-  const isFinished = FINISHED.includes(status);
 
-  const homeScore = match.goals.home ?? 0;
-  const awayScore = match.goals.away ?? 0;
+  const isLive = LIVE_STATUSES.includes(status);
+  const isFinished = FINISHED_STATUSES.includes(status);
 
-  const kickoff = new Date(match.fixture.date).toLocaleTimeString(
+  const matchTime = new Date(match.fixture.date).toLocaleTimeString(
     "en-US",
     {
-      hour: "2-digit",
+      hour: "numeric",
       minute: "2-digit",
     }
   );
 
+  const statusText = isLive
+    ? match.fixture.status.elapsed != null
+      ? `${match.fixture.status.elapsed}'`
+      : status
+    : isFinished
+      ? "Full Time"
+      : matchTime;
+
+  const halftimeScore =
+    match.score?.halftime?.home != null &&
+    match.score?.halftime?.away != null
+      ? `${match.score.halftime.home} - ${match.score.halftime.away}`
+      : null;
+
   return (
-    <main className="min-h-screen bg-[#f3f4f6] text-gray-900">
-      <div className="max-w-4xl mx-auto">
+    <main className="page">
+      <header className="topbar">
+        <div className="headerInner">
+          <Link href="/" className="brandLink">
+            <div className="brandMark">G</div>
 
-        {/* TOP BAR */}
-        <div className="h-11 px-3 flex items-center justify-between bg-[#111827] text-white">
-          <Link
-            href="/"
-            className="text-[11px] font-bold text-gray-300 hover:text-white"
-          >
-            ← Matches
-          </Link>
-
-          <div className="flex items-center gap-1.5 max-w-[60%]">
-            <img
-              src={match.league.logo}
-              alt=""
-              width={18}
-              height={18}
-              style={{
-                width: "18px",
-                height: "18px",
-                objectFit: "contain",
-              }}
-            />
-
-            <span className="text-[10px] font-black truncate">
-              {match.league.name}
-            </span>
-          </div>
-        </div>
-
-        {/* SCOREBOARD */}
-        <section className="bg-white border-b border-gray-200">
-          <div className="h-0.5 bg-orange-500" />
-
-          <div className="px-3 py-4 sm:px-8 sm:py-5">
-
-            <div className="flex justify-center mb-3">
-              <Status
-                live={isLive}
-                finished={isFinished}
-                elapsed={match.fixture.status.elapsed}
-                status={status}
-                kickoff={kickoff}
-              />
-            </div>
-
-            <div className="grid grid-cols-[1fr_92px_1fr] sm:grid-cols-[1fr_130px_1fr] items-center">
-
-              <Team
-                name={match.teams.home.name}
-                logo={match.teams.home.logo}
-                winner={match.teams.home.winner}
-              />
-
-              <div className="text-center">
-                {isLive || isFinished ? (
-                  <>
-                    <div className="text-[32px] sm:text-[42px] leading-none font-black tracking-tight">
-                      {homeScore}
-                      <span className="mx-1.5 text-gray-300">
-                        -
-                      </span>
-                      {awayScore}
-                    </div>
-
-                    {match.score.halftime.home !== null &&
-                      match.score.halftime.away !== null && (
-                        <div className="mt-1.5 text-[8px] font-bold text-gray-400">
-                          HT {match.score.halftime.home} -{" "}
-                          {match.score.halftime.away}
-                        </div>
-                      )}
-                  </>
-                ) : (
-                  <>
-                    <div className="text-xl font-black">
-                      {kickoff}
-                    </div>
-                    <div className="text-[8px] text-gray-400 mt-1 font-bold">
-                      {new Date(match.fixture.date).toLocaleDateString(
-                        "en-US",
-                        {
-                          month: "short",
-                          day: "numeric",
-                        }
-                      )}
-                    </div>
-                  </>
-                )}
+            <div>
+              <div className="brandName">
+                GoGoal<span>Match</span>
               </div>
 
-              <Team
-                name={match.teams.away.name}
-                logo={match.teams.away.logo}
-                winner={match.teams.away.winner}
-              />
+              <div className="brandSubtitle">
+                Live Scores, Results & Statistics
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/" className="backButton">
+            <span>←</span>
+            <span>Matches</span>
+          </Link>
+        </div>
+      </header>
+
+      <div className="content">
+        <div className="breadcrumb">
+          <Link href="/">Matches</Link>
+          <span>/</span>
+          <span>{match.league.name}</span>
+        </div>
+
+        <section className="matchHero">
+          <div className="heroTop">
+            <div className="leagueInfo">
+              {match.league.logo && (
+                <img
+                  src={match.league.logo}
+                  alt=""
+                  className="leagueLogo"
+                />
+              )}
+
+              <div>
+                <div className="leagueName">
+                  {match.league.name}
+                </div>
+
+                <div className="leagueCountry">
+                  {match.league.country}
+                </div>
+              </div>
+            </div>
+
+            {isLive && (
+              <div className="liveIndicator">
+                <span className="liveDot" />
+                LIVE
+              </div>
+            )}
+
+            {isFinished && (
+              <div className="finishedIndicator">FULL TIME</div>
+            )}
+          </div>
+
+          <div className="teamsArea">
+            <div className="teamBlock">
+              <div className="teamLogoWrap">
+                <img
+                  src={match.teams.home.logo}
+                  alt={match.teams.home.name}
+                  className="largeTeamLogo"
+                />
+              </div>
+
+              <div
+                className={`teamNameLarge ${
+                  match.teams.home.winner ? "winner" : ""
+                }`}
+              >
+                {match.teams.home.name}
+              </div>
+
+              <div className="teamLabel">HOME</div>
+            </div>
+
+            <div className="scoreBlock">
+              {isLive || isFinished ? (
+                <>
+                  <div className="mainScore">
+                    <span>{match.goals.home ?? 0}</span>
+                    <span className="scoreDash">-</span>
+                    <span>{match.goals.away ?? 0}</span>
+                  </div>
+
+                  <div
+                    className={`matchStatus ${
+                      isLive ? "liveStatus" : ""
+                    }`}
+                  >
+                    {statusText}
+                  </div>
+
+                  {halftimeScore && (
+                    <div className="halftime">
+                      HT {halftimeScore}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="upcomingLabel">KICK-OFF</div>
+
+                  <div className="kickoffTime">{matchTime}</div>
+
+                  <div className="matchDate">
+                    {new Date(match.fixture.date).toLocaleDateString(
+                      "en-US",
+                      {
+                        weekday: "short",
+                        month: "short",
+                        day: "numeric",
+                      }
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="teamBlock">
+              <div className="teamLogoWrap">
+                <img
+                  src={match.teams.away.logo}
+                  alt={match.teams.away.name}
+                  className="largeTeamLogo"
+                />
+              </div>
+
+              <div
+                className={`teamNameLarge ${
+                  match.teams.away.winner ? "winner" : ""
+                }`}
+              >
+                {match.teams.away.name}
+              </div>
+
+              <div className="teamLabel">AWAY</div>
             </div>
           </div>
         </section>
 
-        {/* TABS */}
-        <div className="px-2 pt-2">
-          <div className="bg-white border border-gray-200 rounded-lg p-0.5 flex">
-            <Tab
-              active={tab === "SUMMARY"}
-              onClick={() => setTab("SUMMARY")}
-            >
-              Summary
-            </Tab>
+        <section className="infoGrid">
+          <InfoItem
+            label="DATE"
+            value={new Date(match.fixture.date).toLocaleDateString(
+              "en-US",
+              {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              }
+            )}
+          />
 
-            <Tab
-              active={tab === "STATISTICS"}
-              onClick={() => setTab("STATISTICS")}
-            >
-              Statistics
-            </Tab>
+          <InfoItem label="KICK-OFF" value={matchTime} />
 
-            <Tab
-              active={tab === "LINEUPS"}
-              onClick={() => setTab("LINEUPS")}
-            >
-              Lineups
-            </Tab>
-          </div>
+          <InfoItem
+            label="VENUE"
+            value={
+              match.fixture.venue?.name
+                ? match.fixture.venue.name
+                : "Not available"
+            }
+            secondary={match.fixture.venue?.city || undefined}
+          />
+
+          <InfoItem
+            label="REFEREE"
+            value={match.fixture.referee || "Not available"}
+          />
+        </section>
+
+        <div className="tabs">
+          <TabButton
+            active={activeTab === "SUMMARY"}
+            onClick={() => setActiveTab("SUMMARY")}
+          >
+            Summary
+          </TabButton>
+
+          <TabButton
+            active={activeTab === "STATS"}
+            onClick={() => setActiveTab("STATS")}
+          >
+            Statistics
+          </TabButton>
+
+          <TabButton
+            active={activeTab === "LINEUPS"}
+            onClick={() => setActiveTab("LINEUPS")}
+          >
+            Lineups
+          </TabButton>
         </div>
 
-        {/* CONTENT */}
-        <div className="px-2 pt-2 pb-6">
-          {tab === "SUMMARY" && (
-            <Summary
-              events={match.events ?? []}
+        <section className="panel">
+          {activeTab === "SUMMARY" && (
+            <MatchSummary
+              events={match.events || []}
               homeId={match.teams.home.id}
             />
           )}
 
-          {tab === "STATISTICS" && (
-            <Statistics
-              statistics={match.statistics ?? []}
-              homeId={match.teams.home.id}
+          {activeTab === "STATS" && (
+            <MatchStatistics
+              statistics={match.statistics || []}
+              homeTeam={match.teams.home.name}
+              awayTeam={match.teams.away.name}
             />
           )}
 
-          {tab === "LINEUPS" && (
-            <Lineups
-              lineups={match.lineups ?? []}
+          {activeTab === "LINEUPS" && (
+            <MatchLineups
+              lineups={match.lineups || []}
               homeId={match.teams.home.id}
             />
           )}
-
-          <Information match={match} />
-        </div>
+        </section>
       </div>
+
+      <PageStyles />
     </main>
   );
 }
 
-function Team({
-  name,
-  logo,
-  winner,
+function InfoItem({
+  label,
+  value,
+  secondary,
 }: {
-  name: string;
-  logo: string;
-  winner: boolean | null;
+  label: string;
+  value: string;
+  secondary?: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center min-w-0 px-1">
-      <div
-        style={{
-          width: "38px",
-          height: "38px",
-          minWidth: "38px",
-          minHeight: "38px",
-          maxWidth: "38px",
-          maxHeight: "38px",
-        }}
-        className="flex items-center justify-center"
-      >
-        <img
-          src={logo}
-          alt=""
-          width={38}
-          height={38}
-          style={{
-            width: "38px",
-            height: "38px",
-            maxWidth: "38px",
-            maxHeight: "38px",
-            objectFit: "contain",
-          }}
-        />
-      </div>
-
-      <div
-        className={`mt-1.5 text-[10px] sm:text-[11px] leading-tight text-center truncate w-full max-w-[125px] ${
-          winner === true
-            ? "font-black text-gray-900"
-            : "font-bold text-gray-600"
-        }`}
-      >
-        {name}
-      </div>
+    <div className="infoItem">
+      <div className="infoLabel">{label}</div>
+      <div className="infoValue">{value}</div>
+      {secondary && <div className="infoSecondary">{secondary}</div>}
     </div>
   );
 }
 
-function Status({
-  live,
-  finished,
-  elapsed,
-  status,
-  kickoff,
-}: {
-  live: boolean;
-  finished: boolean;
-  elapsed: number | null;
-  status: string;
-  kickoff: string;
-}) {
-  if (live) {
-    return (
-      <span className="inline-flex items-center gap-1 bg-red-50 text-red-600 rounded-full px-2.5 py-1 text-[9px] font-black">
-        <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-        {elapsed !== null ? `${elapsed}'` : "LIVE"}
-      </span>
-    );
-  }
-
-  if (finished) {
-    return (
-      <span className="bg-gray-100 text-gray-500 rounded-full px-2.5 py-1 text-[9px] font-black">
-        {status === "PEN" ? "PENALTIES" : "FULL TIME"}
-      </span>
-    );
-  }
-
-  return (
-    <span className="bg-orange-50 text-orange-600 rounded-full px-2.5 py-1 text-[9px] font-black">
-      {kickoff}
-    </span>
-  );
-}
-
-function Tab({
+function TabButton({
   active,
   children,
   onClick,
@@ -439,423 +484,553 @@ function Tab({
     <button
       type="button"
       onClick={onClick}
-      className={`flex-1 h-8 rounded-md text-[10px] font-black ${
-        active
-          ? "bg-orange-500 text-white"
-          : "text-gray-500"
-      }`}
+      className={`tabButton ${active ? "active" : ""}`}
     >
       {children}
     </button>
   );
 }
 
-function Summary({
+function MatchSummary({
   events,
   homeId,
 }: {
-  events: MatchEvent[];
+  events: MatchDetail["events"];
   homeId: number;
 }) {
-  const sorted = [...events].sort(
-    (a, b) =>
-      a.time.elapsed - b.time.elapsed ||
-      (a.time.extra || 0) - (b.time.extra || 0)
-  );
-
-  return (
-    <section className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-      <Header title="Match Events" />
-
-      {sorted.length === 0 ? (
-        <div className="py-8 text-center">
-          <div className="text-[11px] font-black text-gray-500">
-            No events
-          </div>
-        </div>
-      ) : (
-        <div className="divide-y divide-gray-100">
-          {sorted.map((event, index) => {
-            const home = event.team.id === homeId;
-            const goal =
-              event.type.toLowerCase() === "goal";
-            const card =
-              event.type.toLowerCase() === "card";
-
-            return (
-              <div
-                key={`${event.time.elapsed}-${index}`}
-                className="grid grid-cols-[42px_1fr_42px] items-center min-h-[48px] px-3"
-              >
-                <div
-                  className={`text-[10px] font-black ${
-                    home
-                      ? "text-right pr-2"
-                      : "text-left pl-2"
-                  }`}
-                >
-                  {home
-                    ? `${event.time.elapsed}${event.time.extra ? `+${event.time.extra}` : ""}'`
-                    : ""}
-                </div>
-
-                <div
-                  className={`flex items-center gap-2 ${
-                    home
-                      ? "justify-end text-right"
-                      : "justify-start"
-                  }`}
-                >
-                  {!home && (
-                    <span className="text-[10px] font-black text-gray-500 w-7">
-                      {event.time.elapsed}
-                      {event.time.extra
-                        ? `+${event.time.extra}`
-                        : ""}
-                      '
-                    </span>
-                  )}
-
-                  <span
-                    className={`w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[8px] font-black ${
-                      goal
-                        ? "bg-orange-500 text-white"
-                        : card
-                          ? "bg-yellow-400 text-white"
-                          : "bg-gray-100 text-gray-500"
-                    }`}
-                  >
-                    {goal ? "G" : card ? "C" : "•"}
-                  </span>
-
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-black text-gray-800 truncate">
-                      {event.player?.name || "Unknown"}
-                    </div>
-
-                    <div className="text-[8px] text-gray-400 truncate">
-                      {event.detail || event.type}
-                    </div>
-
-                    {event.assist?.name && (
-                      <div className="text-[8px] text-gray-400 truncate">
-                        Assist: {event.assist.name}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div
-                  className={`text-[10px] font-black ${
-                    !home
-                      ? "text-left pl-2"
-                      : "text-right pr-2"
-                  }`}
-                >
-                  {!home
-                    ? `${event.time.elapsed}${event.time.extra ? `+${event.time.extra}` : ""}'`
-                    : ""}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function Statistics({
-  statistics,
-  homeId,
-}: {
-  statistics: TeamStatistics[];
-  homeId: number;
-}) {
-  if (statistics.length < 2) {
+  if (!events || events.length === 0) {
     return (
-      <Empty
-        title="Statistics unavailable"
-        text="No statistics are available."
-      />
+      <div className="emptyState">
+        <div className="emptyStateIcon">⚽</div>
+        <h3>No match events</h3>
+        <p>Match events will appear here when available.</p>
+      </div>
     );
   }
 
-  const home =
-    statistics.find((x) => x.team.id === homeId) ||
-    statistics[0];
-
-  const away =
-    statistics.find((x) => x.team.id !== homeId) ||
-    statistics[1];
-
-  const awayMap = new Map(
-    away.statistics.map((x) => [x.type, x.value])
+  const sortedEvents = [...events].sort(
+    (a, b) => a.time.elapsed - b.time.elapsed
   );
 
   return (
-    <section className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-      <Header title="Statistics" />
-
-      <div className="px-3 py-4">
-        <div className="grid grid-cols-3 text-[9px] font-black mb-4">
-          <span className="truncate">
-            {home.team.name}
-          </span>
-
-          <span className="text-center text-gray-400">
-            STATISTICS
-          </span>
-
-          <span className="text-right truncate">
-            {away.team.name}
-          </span>
+    <div>
+      <div className="panelHeading">
+        <div>
+          <h2>Match Events</h2>
+          <p>Goals, cards and substitutions</p>
         </div>
 
-        <div className="space-y-4">
-          {home.statistics.map((item, index) => {
-            const awayValue = awayMap.get(item.type);
-
-            const h = numberValue(item.value);
-            const a = numberValue(awayValue);
-            const total = h + a;
-            const homePercent =
-              total > 0 ? (h / total) * 100 : 50;
-
-            return (
-              <div key={`${item.type}-${index}`}>
-                <div className="grid grid-cols-[35px_1fr_35px] items-center mb-1">
-                  <span className="text-[9px] font-black">
-                    {item.value ?? 0}
-                  </span>
-
-                  <span className="text-[8px] font-bold text-gray-400 text-center truncate">
-                    {item.type}
-                  </span>
-
-                  <span className="text-[9px] font-black text-right">
-                    {awayValue ?? 0}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-1 h-1.5">
-                  <div className="bg-gray-100 rounded-l-full overflow-hidden">
-                    <div
-                      className="h-full bg-orange-500"
-                      style={{
-                        width: `${homePercent}%`,
-                      }}
-                    />
-                  </div>
-
-                  <div className="bg-gray-100 rounded-r-full overflow-hidden">
-                    <div
-                      className="h-full bg-gray-400"
-                      style={{
-                        width: `${100 - homePercent}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <div className="eventCount">{events.length}</div>
       </div>
-    </section>
+
+      <div className="eventsList">
+        {sortedEvents.map((event, index) => {
+          const isHome = event.team.id === homeId;
+          const type = event.type.toLowerCase();
+          const detail = event.detail.toLowerCase();
+
+          const isGoal = type === "goal";
+          const isCard = type === "card";
+          const isSubstitution = type === "subst";
+
+          let icon = "•";
+
+          if (isGoal) {
+            icon = "⚽";
+          } else if (isCard) {
+            icon = detail.includes("red") ? "🟥" : "🟨";
+          } else if (isSubstitution) {
+            icon = "↔";
+          }
+
+          const minute = event.time.extra
+            ? `${event.time.elapsed}+${event.time.extra}'`
+            : `${event.time.elapsed}'`;
+
+          return (
+            <div
+              key={index}
+              className={`eventRow ${isHome ? "homeEvent" : "awayEvent"}`}
+            >
+              {isHome ? (
+                <>
+                  <div className="eventMinute">{minute}</div>
+
+                  <div className="eventContent">
+                    <div className="eventIcon">{icon}</div>
+
+                    <div>
+                      <div className="eventPlayer">
+                        {event.player?.name || event.detail}
+                      </div>
+
+                      {event.assist?.name && (
+                        <div className="eventAssist">
+                          Assist: {event.assist.name}
+                        </div>
+                      )}
+
+                      {!isGoal &&
+                        !isCard &&
+                        !isSubstitution && (
+                          <div className="eventAssist">
+                            {event.detail}
+                          </div>
+                        )}
+                    </div>
+                  </div>
+
+                  <div className="eventTeam">{event.team.name}</div>
+                </>
+              ) : (
+                <>
+                  <div className="eventTeam awayTeam">
+                    {event.team.name}
+                  </div>
+
+                  <div className="eventContent awayContent">
+                    <div>
+                      <div className="eventPlayer">
+                        {event.player?.name || event.detail}
+                      </div>
+
+                      {event.assist?.name && (
+                        <div className="eventAssist">
+                          Assist: {event.assist.name}
+                        </div>
+                      )}
+
+                      {!isGoal &&
+                        !isCard &&
+                        !isSubstitution && (
+                          <div className="eventAssist">
+                            {event.detail}
+                          </div>
+                        )}
+                    </div>
+
+                    <div className="eventIcon">{icon}</div>
+                  </div>
+
+                  <div className="eventMinute">{minute}</div>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
-function Lineups({
+function MatchStatistics({
+  statistics,
+  homeTeam,
+  awayTeam,
+}: {
+  statistics: MatchDetail["statistics"];
+  homeTeam: string;
+  awayTeam: string;
+}) {
+  if (!statistics || statistics.length < 2) {
+    return (
+      <div className="emptyState">
+        <div className="emptyStateIcon">%</div>
+        <h3>Statistics unavailable</h3>
+        <p>Statistics for this match are not available yet.</p>
+      </div>
+    );
+  }
+
+  const homeStats = statistics[0].statistics;
+  const awayStats = statistics[1].statistics;
+
+  return (
+    <div>
+      <div className="panelHeading">
+        <div>
+          <h2>Match Statistics</h2>
+          <p>Team performance comparison</p>
+        </div>
+      </div>
+
+      <div className="statsTeams">
+        <div>{homeTeam}</div>
+        <div className="vsLabel">VS</div>
+        <div>{awayTeam}</div>
+      </div>
+
+      <div className="statsList">
+        {homeStats.map((item, index) => {
+          const awayItem = awayStats.find(
+            (stat) => stat.type === item.type
+          );
+
+          const homeValue = getNumericValue(item.value);
+          const awayValue = getNumericValue(awayItem?.value);
+
+          const total = homeValue + awayValue;
+          const homePercent =
+            total > 0 ? (homeValue / total) * 100 : 50;
+
+          return (
+            <div className="statRow" key={`${item.type}-${index}`}>
+              <div className="statValues">
+                <span className="homeStatValue">
+                  {item.value ?? "0"}
+                </span>
+
+                <span className="statName">
+                  {formatStatName(item.type)}
+                </span>
+
+                <span className="awayStatValue">
+                  {awayItem?.value ?? "0"}
+                </span>
+              </div>
+
+              <div className="statBar">
+                <div
+                  className="statHomeBar"
+                  style={{ width: `${homePercent}%` }}
+                />
+
+                <div
+                  className="statAwayBar"
+                  style={{ width: `${100 - homePercent}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function getNumericValue(value: number | string | null | undefined) {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = parseFloat(value.replace("%", ""));
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+
+  return 0;
+}
+
+function formatStatName(value: string) {
+  return value
+    .replace(/([A-Z])/g, " $1")
+    .replace(/^./, (char) => char.toUpperCase())
+    .trim();
+}
+
+function MatchLineups({
   lineups,
   homeId,
 }: {
-  lineups: Lineup[];
+  lineups: MatchDetail["lineups"];
   homeId: number;
 }) {
-  if (lineups.length === 0) {
+  if (!lineups || lineups.length === 0) {
     return (
-      <Empty
-        title="Lineups unavailable"
-        text="Lineup information is not available yet."
-      />
+      <div className="emptyState">
+        <div className="emptyStateIcon">XI</div>
+        <h3>Lineups unavailable</h3>
+        <p>Starting lineups have not been published yet.</p>
+      </div>
     );
   }
 
-  const home =
-    lineups.find((x) => x.team.id === homeId) ||
-    lineups[0];
+  const homeLineup =
+    lineups.find((lineup) => lineup.team.id === homeId) || lineups[0];
 
-  const away =
-    lineups.find((x) => x.team.id !== homeId) ||
-    lineups[1];
+  const awayLineup =
+    lineups.find((lineup) => lineup.team.id !== homeId) || lineups[1];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-      <LineupCard lineup={home} />
-      {away && <LineupCard lineup={away} />}
-    </div>
-  );
-}
-
-function LineupCard({ lineup }: { lineup: Lineup }) {
-  return (
-    <section className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-      <div className="px-3 py-2.5 border-b border-gray-100 flex items-center justify-between">
-        <span className="text-[10px] font-black truncate">
-          {lineup.team.name}
-        </span>
-
-        <span className="text-[8px] font-black text-orange-600 bg-orange-50 rounded px-1.5 py-1">
-          {lineup.formation || "XI"}
-        </span>
-      </div>
-
-      <div className="p-2.5">
-        <div className="text-[8px] font-black uppercase text-gray-400 mb-1.5">
-          Starting XI
+    <div>
+      <div className="panelHeading">
+        <div>
+          <h2>Starting Lineups</h2>
+          <p>Starting XI and formations</p>
         </div>
-
-        <div className="space-y-1">
-          {lineup.startXI.map((item, index) => (
-            <Player
-              key={`${item.player.id}-${index}`}
-              player={item.player}
-            />
-          ))}
-        </div>
-
-        {lineup.substitutes.length > 0 && (
-          <>
-            <div className="text-[8px] font-black uppercase text-gray-400 mt-4 mb-1.5">
-              Substitutes
-            </div>
-
-            <div className="space-y-1">
-              {lineup.substitutes.map((item, index) => (
-                <Player
-                  key={`sub-${item.player.id}-${index}`}
-                  player={item.player}
-                />
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function Player({ player }: { player: Player }) {
-  return (
-    <div className="h-7 px-2 flex items-center gap-2 bg-gray-50 rounded">
-      <span className="w-5 h-5 shrink-0 bg-white border border-gray-200 rounded flex items-center justify-center text-[8px] font-black text-orange-500">
-        {player.number}
-      </span>
-
-      <span className="text-[9px] font-bold truncate flex-1">
-        {player.name}
-      </span>
-
-      <span className="text-[7px] font-black text-gray-400">
-        {player.pos}
-      </span>
-    </div>
-  );
-}
-
-function Information({
-  match,
-}: {
-  match: MatchDetail;
-}) {
-  return (
-    <section className="mt-2 bg-white border border-gray-200 rounded-lg overflow-hidden">
-      <Header title="Match Information" />
-
-      <div className="grid grid-cols-2 sm:grid-cols-4">
-        <Info
-          label="Venue"
-          value={match.fixture.venue?.name || "N/A"}
-        />
-
-        <Info
-          label="City"
-          value={match.fixture.venue?.city || "N/A"}
-        />
-
-        <Info
-          label="Referee"
-          value={match.fixture.referee || "N/A"}
-        />
-
-        <Info
-          label="Competition"
-          value={match.league.name}
-        />
-      </div>
-    </section>
-  );
-}
-
-function Header({ title }: { title: string }) {
-  return (
-    <div className="h-10 px-3 flex items-center border-b border-gray-100">
-      <h2 className="text-[10px] font-black uppercase tracking-wide">
-        {title}
-      </h2>
-    </div>
-  );
-}
-
-function Info({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="px-3 py-2.5 border-b border-gray-100 min-w-0">
-      <div className="text-[7px] uppercase font-black tracking-wide text-gray-400">
-        {label}
       </div>
 
-      <div className="mt-0.5 text-[9px] font-bold text-gray-700 truncate">
-        {value}
+      <div className="lineupsGrid">
+        <TeamLineupBox
+          title="Home"
+          lineup={homeLineup}
+        />
+
+        <TeamLineupBox
+          title="Away"
+          lineup={awayLineup}
+        />
       </div>
     </div>
   );
 }
 
-function Empty({
+function TeamLineupBox({
   title,
-  text,
+  lineup,
 }: {
   title: string;
-  text: string;
+  lineup: MatchDetail["lineups"] extends Array<infer T> ? T | undefined : never;
 }) {
+  if (!lineup) {
+    return (
+      <div className="lineupBox">
+        <div className="lineupEmpty">Lineup unavailable</div>
+      </div>
+    );
+  }
+
   return (
-    <section className="bg-white border border-gray-200 rounded-lg p-8 text-center">
-      <div className="text-[10px] font-black text-gray-600">
-        {title}
+    <div className="lineupBox">
+      <div className="lineupHeader">
+        <div>
+          <div className="lineupTitle">{title}</div>
+          <div className="lineupTeam">{lineup.team.name}</div>
+        </div>
+
+        <div className="formation">{lineup.formation || "—"}</div>
       </div>
 
-      <div className="text-[9px] text-gray-400 mt-1">
-        {text}
+      <div className="playersTitle">Starting XI</div>
+
+      <div className="playersList">
+        {lineup.startXI?.map((item, index) => (
+          <div className="playerRow" key={index}>
+            <div className="playerNumber">
+              {item.player.number}
+            </div>
+
+            <div className="playerName">
+              {item.player.name}
+            </div>
+
+            <div className="playerPosition">
+              {item.player.pos}
+            </div>
+          </div>
+        ))}
       </div>
-    </section>
+
+      {lineup.substitutes?.length > 0 && (
+        <>
+          <div className="playersTitle substitutesTitle">
+            Substitutes
+          </div>
+
+          <div className="playersList">
+            {lineup.substitutes.map((item, index) => (
+              <div className="playerRow substituteRow" key={index}>
+                <div className="playerNumber">
+                  {item.player.number}
+                </div>
+
+                <div className="playerName">
+                  {item.player.name}
+                </div>
+
+                <div className="playerPosition">
+                  {item.player.pos}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
-function numberValue(
-  value: number | string | null | undefined
-) {
-  if (value === null || value === undefined) return 0;
+function PageStyles() {
+  return (
+    <style jsx global>{`
+      * {
+        box-sizing: border-box;
+      }
 
-  const n = parseFloat(
-    String(value).replace("%", "")
-  );
+      body {
+        margin: 0;
+        background: #f6f6f6;
+        color: #171717;
+        font-family:
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+      }
 
-  return Number.isFinite(n) ? n : 0;
-}
+      button,
+      input {
+        font-family: inherit;
+      }
+
+      .page {
+        min-height: 100vh;
+        background:
+          linear-gradient(
+            180deg,
+            #fff7ed 0px,
+            #ffffff 260px,
+            #f6f6f6 600px
+          );
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(14px);
+        border-bottom: 1px solid #eeeeee;
+      }
+
+      .headerInner {
+        max-width: 1150px;
+        margin: auto;
+        min-height: 74px;
+        padding: 12px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .brandLink {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        text-decoration: none;
+        color: inherit;
+      }
+
+      .brandMark {
+        width: 42px;
+        height: 42px;
+        border-radius: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f97316;
+        color: white;
+        font-size: 21px;
+        font-weight: 900;
+        box-shadow: 0 5px 15px rgba(249, 115, 22, 0.25);
+      }
+
+      .brandName {
+        font-size: 22px;
+        line-height: 1;
+        font-weight: 900;
+        letter-spacing: -0.6px;
+      }
+
+      .brandName span {
+        color: #f97316;
+      }
+
+      .brandSubtitle {
+        margin-top: 5px;
+        font-size: 10px;
+        color: #999999;
+      }
+
+      .backButton {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        text-decoration: none;
+        color: #555555;
+        background: white;
+        border: 1px solid #dedede;
+        border-radius: 10px;
+        padding: 9px 13px;
+        font-size: 12px;
+        font-weight: 800;
+        transition: 0.2s;
+      }
+
+      .backButton:hover {
+        border-color: #f97316;
+        color: #f97316;
+      }
+
+      .content {
+        max-width: 950px;
+        margin: auto;
+        padding: 18px;
+      }
+
+      .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #999999;
+        font-size: 11px;
+        margin-bottom: 13px;
+      }
+
+      .breadcrumb a {
+        color: #f97316;
+        text-decoration: none;
+        font-weight: 800;
+      }
+
+      .matchHero {
+        position: relative;
+        background: white;
+        border: 1px solid #e5e5e5;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.045);
+      }
+
+      .matchHero::before {
+        content: "";
+        display: block;
+        height: 4px;
+        background: linear-gradient(
+          90deg,
+          #f97316,
+          #fb923c,
+          #f97316
+        );
+      }
+
+      .heroTop {
+        padding: 17px 20px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+      }
+
+      .leagueInfo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .leagueLogo {
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+        flex: 0 0 32px;
+      }
+
+      .leagueName {
+        font-size: 13px;
+        font-weight: 900;
+        color: #222

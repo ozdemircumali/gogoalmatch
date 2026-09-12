@@ -48,10 +48,7 @@ function groupMatchesByLeague(matches: Match[]) {
         ? `id-${match.league.id}`
         : `${match.league.country}-${match.league.name}`;
 
-    if (!groups[key]) {
-      groups[key] = [];
-    }
-
+    if (!groups[key]) groups[key] = [];
     groups[key].push(match);
   });
 
@@ -84,9 +81,7 @@ export default function Home() {
     try {
       const response = await fetch(
         `/api/fixtures?date=${selectedDate}`,
-        {
-          cache: "no-store",
-        }
+        { cache: "no-store" }
       );
 
       const data = await response.json();
@@ -120,13 +115,9 @@ export default function Home() {
     e.preventDefault();
     e.stopPropagation();
 
-    let updated = [...favorites];
-
-    if (updated.includes(id)) {
-      updated = updated.filter((favId) => favId !== id);
-    } else {
-      updated.push(id);
-    }
+    const updated = favorites.includes(id)
+      ? favorites.filter((favId) => favId !== id)
+      : [...favorites, id];
 
     setFavorites(updated);
     localStorage.setItem(
@@ -165,7 +156,6 @@ export default function Home() {
 
   const filteredMatches = matches.filter((match) => {
     const status = match.fixture.status.short;
-
     const isLive = LIVE_STATUSES.includes(status);
     const isFinished = FINISHED_STATUSES.includes(status);
     const isUpcoming = !isLive && !isFinished;
@@ -176,17 +166,13 @@ export default function Home() {
     if (activeTab === "FINISHED" && !isFinished) return false;
     if (activeTab === "FAV" && !isFav) return false;
 
-    if (searchQuery.trim() !== "") {
+    if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
 
-      const home = match.teams.home.name.toLowerCase();
-      const away = match.teams.away.name.toLowerCase();
-      const league = match.league.name.toLowerCase();
-
       return (
-        home.includes(query) ||
-        away.includes(query) ||
-        league.includes(query)
+        match.teams.home.name.toLowerCase().includes(query) ||
+        match.teams.away.name.toLowerCase().includes(query) ||
+        match.league.name.toLowerCase().includes(query)
       );
     }
 
@@ -197,81 +183,446 @@ export default function Home() {
     LIVE_STATUSES.includes(match.fixture.status.short)
   ).length;
 
-  const leagueGroups =
-    groupMatchesByLeague(filteredMatches);
+  const leagueGroups = groupMatchesByLeague(filteredMatches);
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "#f7f7f7",
-        color: "#222",
-        fontFamily:
-          "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-      }}
-    >
-      <header
-        style={{
-          background: "#ffffff",
-          borderBottom: "1px solid #e5e5e5",
-          position: "sticky",
-          top: 0,
-          zIndex: 20,
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1100,
-            margin: "0 auto",
-            padding: "18px 16px",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 15,
-            }}
-          >
-            <div>
-              <h1
-                style={{
-                  margin: 0,
-                  fontSize: 28,
-                  fontWeight: 800,
-                  color: "#f97316",
-                }}
-              >
-                GoGoalMatch
-              </h1>
+    <main className="page">
+      <style jsx global>{`
+        * {
+          box-sizing: border-box;
+        }
 
-              <p
-                style={{
-                  margin: "3px 0 0",
-                  fontSize: 13,
-                  color: "#777",
-                }}
-              >
-                Live Scores, Results & Statistics
-              </p>
+        body {
+          margin: 0;
+          background: #f5f5f5;
+          font-family:
+            -apple-system, BlinkMacSystemFont, "Segoe UI",
+            Roboto, Helvetica, Arial, sans-serif;
+          color: #171717;
+        }
+
+        button,
+        input {
+          font-family: inherit;
+        }
+
+        .page {
+          min-height: 100vh;
+          background:
+            linear-gradient(
+              180deg,
+              #fff7ed 0px,
+              #ffffff 230px,
+              #f6f6f6 520px
+            );
+        }
+
+        .topbar {
+          position: sticky;
+          top: 0;
+          z-index: 50;
+          background: rgba(255, 255, 255, 0.96);
+          backdrop-filter: blur(12px);
+          border-bottom: 1px solid #eeeeee;
+        }
+
+        .header {
+          max-width: 1150px;
+          margin: auto;
+          padding: 18px 18px 16px;
+        }
+
+        .brandRow {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 15px;
+        }
+
+        .brand {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+        }
+
+        .brandMark {
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          background: #f97316;
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 22px;
+          font-weight: 900;
+          box-shadow: 0 5px 14px rgba(249, 115, 22, 0.28);
+        }
+
+        .brandTitle {
+          margin: 0;
+          font-size: 25px;
+          line-height: 1;
+          font-weight: 900;
+          letter-spacing: -0.7px;
+          color: #171717;
+        }
+
+        .brandTitle span {
+          color: #f97316;
+        }
+
+        .subtitle {
+          margin: 5px 0 0;
+          color: #888;
+          font-size: 12px;
+        }
+
+        .liveBadge {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          background: #fff1e7;
+          border: 1px solid #fed7aa;
+          color: #ea580c;
+          border-radius: 999px;
+          padding: 8px 12px;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .liveDot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #f97316;
+          box-shadow: 0 0 0 4px #ffedd5;
+        }
+
+        .search {
+          margin-top: 17px;
+          position: relative;
+        }
+
+        .search input {
+          width: 100%;
+          height: 46px;
+          border: 1px solid #dedede;
+          border-radius: 11px;
+          background: white;
+          padding: 0 15px;
+          font-size: 14px;
+          outline: none;
+          transition: 0.2s;
+        }
+
+        .search input:focus {
+          border-color: #f97316;
+          box-shadow: 0 0 0 3px #ffedd5;
+        }
+
+        .content {
+          max-width: 1150px;
+          margin: auto;
+          padding: 18px;
+        }
+
+        .dateBar,
+        .filterBar {
+          display: flex;
+          gap: 8px;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+
+        .dateBar::-webkit-scrollbar,
+        .filterBar::-webkit-scrollbar {
+          display: none;
+        }
+
+        .dateButton {
+          flex: 0 0 auto;
+          min-width: 82px;
+          padding: 10px 13px;
+          border-radius: 10px;
+          border: 1px solid #dddddd;
+          background: white;
+          color: #555;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .dateButton.active {
+          background: #f97316;
+          color: white;
+          border-color: #f97316;
+          box-shadow: 0 4px 10px rgba(249, 115, 22, 0.22);
+        }
+
+        .filterBar {
+          margin-top: 12px;
+          padding-bottom: 2px;
+        }
+
+        .filterButton {
+          flex: 0 0 auto;
+          border: 1px solid #e2e2e2;
+          background: white;
+          color: #555;
+          padding: 9px 15px;
+          border-radius: 999px;
+          font-size: 12px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .filterButton.active {
+          background: #171717;
+          color: white;
+          border-color: #171717;
+        }
+
+        .section {
+          margin-top: 20px;
+          border: 1px solid #e5e5e5;
+          border-radius: 14px;
+          background: white;
+          overflow: hidden;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.035);
+        }
+
+        .leagueHeader {
+          min-height: 55px;
+          padding: 10px 15px;
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          background: linear-gradient(
+            90deg,
+            #fff7ed,
+            #ffffff
+          );
+          border-bottom: 1px solid #eeeeee;
+        }
+
+        .leagueLogo {
+          width: 32px;
+          height: 32px;
+          object-fit: contain;
+        }
+
+        .leagueName {
+          font-size: 14px;
+          font-weight: 850;
+          color: #202020;
+        }
+
+        .leagueCountry {
+          margin-top: 2px;
+          color: #999;
+          font-size: 11px;
+        }
+
+        .match {
+          position: relative;
+          display: grid;
+          grid-template-columns: 70px minmax(0, 1fr) 55px 34px;
+          align-items: center;
+          gap: 9px;
+          min-height: 88px;
+          padding: 12px 14px;
+          text-decoration: none;
+          color: inherit;
+          border-bottom: 1px solid #f0f0f0;
+          transition: background 0.15s;
+        }
+
+        .match:last-child {
+          border-bottom: none;
+        }
+
+        .match:hover {
+          background: #fffaf6;
+        }
+
+        .matchTime {
+          text-align: center;
+          color: #777;
+          font-size: 11px;
+          font-weight: 800;
+        }
+
+        .matchTime.live {
+          color: #f97316;
+        }
+
+        .teams {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          min-width: 0;
+        }
+
+        .team {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          min-width: 0;
+        }
+
+        .teamLogo {
+          width: 25px;
+          height: 25px;
+          flex: 0 0 25px;
+          object-fit: contain;
+        }
+
+        .teamName {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          font-size: 13px;
+          font-weight: 650;
+        }
+
+        .scores {
+          text-align: center;
+          font-size: 15px;
+          line-height: 1.7;
+          font-weight: 900;
+        }
+
+        .favorite {
+          border: none;
+          background: transparent;
+          color: #c7c7c7;
+          font-size: 21px;
+          cursor: pointer;
+          padding: 5px;
+        }
+
+        .favorite.active {
+          color: #f97316;
+        }
+
+        .empty,
+        .loading {
+          margin-top: 20px;
+          background: white;
+          border: 1px solid #e5e5e5;
+          border-radius: 14px;
+          text-align: center;
+          padding: 60px 20px;
+        }
+
+        .emptyIcon {
+          width: 54px;
+          height: 54px;
+          margin: 0 auto 13px;
+          border-radius: 50%;
+          background: #fff1e7;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 25px;
+        }
+
+        .empty h2 {
+          margin: 0;
+          font-size: 18px;
+        }
+
+        .empty p {
+          margin: 7px 0 0;
+          color: #888;
+          font-size: 13px;
+        }
+
+        .loading {
+          color: #777;
+          font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+          .header {
+            padding: 14px 12px;
+          }
+
+          .content {
+            padding: 13px 12px;
+          }
+
+          .brandMark {
+            width: 39px;
+            height: 39px;
+            font-size: 19px;
+            border-radius: 10px;
+          }
+
+          .brandTitle {
+            font-size: 21px;
+          }
+
+          .subtitle {
+            font-size: 10px;
+          }
+
+          .liveBadge {
+            padding: 7px 9px;
+            font-size: 10px;
+          }
+
+          .match {
+            grid-template-columns: 54px minmax(0, 1fr) 42px 30px;
+            padding: 11px 9px;
+            gap: 6px;
+          }
+
+          .teamName {
+            font-size: 12px;
+          }
+
+          .teamLogo {
+            width: 23px;
+            height: 23px;
+            flex-basis: 23px;
+          }
+
+          .scores {
+            font-size: 14px;
+          }
+
+          .leagueHeader {
+            padding: 9px 11px;
+          }
+        }
+      `}</style>
+
+      <header className="topbar">
+        <div className="header">
+          <div className="brandRow">
+            <div className="brand">
+              <div className="brandMark">G</div>
+
+              <div>
+                <h1 className="brandTitle">
+                  GoGoal<span>Match</span>
+                </h1>
+
+                <p className="subtitle">
+                  Live Scores, Results & Statistics
+                </p>
+              </div>
             </div>
 
-            <div
-              style={{
-                background: "#fff7ed",
-                color: "#ea580c",
-                padding: "8px 12px",
-                borderRadius: 20,
-                fontSize: 13,
-                fontWeight: 700,
-              }}
-            >
+            <div className="liveBadge">
+              <span className="liveDot" />
               {liveCount} LIVE
             </div>
           </div>
 
-          <div style={{ marginTop: 16 }}>
+          <div className="search">
             <input
               type="text"
               placeholder="Search team or league..."
@@ -279,77 +630,27 @@ export default function Home() {
               onChange={(e) =>
                 setSearchQuery(e.target.value)
               }
-              style={{
-                width: "100%",
-                boxSizing: "border-box",
-                padding: "12px 14px",
-                border: "1px solid #ddd",
-                borderRadius: 10,
-                background: "#fff",
-                color: "#222",
-                fontSize: 14,
-                outline: "none",
-              }}
             />
           </div>
         </div>
       </header>
 
-      <div
-        style={{
-          maxWidth: 1100,
-          margin: "0 auto",
-          padding: "16px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            overflowX: "auto",
-            paddingBottom: 6,
-          }}
-        >
+      <div className="content">
+        <div className="dateBar">
           {generateDateTabs().map((date) => (
             <button
               key={date.iso}
-              onClick={() =>
-                setSelectedDate(date.iso)
-              }
-              style={{
-                flex: "0 0 auto",
-                padding: "9px 14px",
-                borderRadius: 9,
-                border:
-                  selectedDate === date.iso
-                    ? "1px solid #f97316"
-                    : "1px solid #ddd",
-                background:
-                  selectedDate === date.iso
-                    ? "#f97316"
-                    : "#fff",
-                color:
-                  selectedDate === date.iso
-                    ? "#fff"
-                    : "#555",
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
+              className={`dateButton ${
+                selectedDate === date.iso ? "active" : ""
+              }`}
+              onClick={() => setSelectedDate(date.iso)}
             >
               {date.label}
             </button>
           ))}
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            marginTop: 14,
-            overflowX: "auto",
-            paddingBottom: 4,
-          }}
-        >
+        <div className="filterBar">
           {(
             [
               ["ALL", "All"],
@@ -361,27 +662,10 @@ export default function Home() {
           ).map(([value, label]) => (
             <button
               key={value}
+              className={`filterButton ${
+                activeTab === value ? "active" : ""
+              }`}
               onClick={() => setActiveTab(value)}
-              style={{
-                flex: "0 0 auto",
-                padding: "8px 13px",
-                border: "none",
-                borderRadius: 8,
-                background:
-                  activeTab === value
-                    ? "#ea580c"
-                    : "#ffffff",
-                color:
-                  activeTab === value
-                    ? "#ffffff"
-                    : "#555",
-                boxShadow:
-                  activeTab === value
-                    ? "0 2px 6px rgba(234,88,12,0.25)"
-                    : "0 1px 3px rgba(0,0,0,0.08)",
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
             >
               {label}
             </button>
@@ -389,55 +673,21 @@ export default function Home() {
         </div>
 
         {loading ? (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "60px 20px",
-              color: "#777",
-            }}
-          >
+          <div className="loading">
             Loading matches...
           </div>
         ) : filteredMatches.length === 0 ? (
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: 12,
-              padding: "50px 20px",
-              marginTop: 18,
-              textAlign: "center",
-              border: "1px solid #e5e5e5",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 40,
-                marginBottom: 10,
-              }}
-            >
-              ⚽
-            </div>
+          <div className="empty">
+            <div className="emptyIcon">⚽</div>
 
-            <h2
-              style={{
-                margin: 0,
-                fontSize: 20,
-              }}
-            >
-              No matches found
-            </h2>
+            <h2>No matches found</h2>
 
-            <p
-              style={{
-                color: "#777",
-                marginTop: 8,
-              }}
-            >
-              Try another date or search.
+            <p>
+              Try another date, filter or search.
             </p>
           </div>
         ) : (
-          <div style={{ marginTop: 18 }}>
+          <div>
             {leagueGroups.map((leagueMatches) => {
               const league = leagueMatches[0].league;
 
@@ -447,53 +697,23 @@ export default function Home() {
                     league.id ??
                     `${league.country}-${league.name}`
                   }
-                  style={{
-                    marginBottom: 18,
-                    background: "#fff",
-                    borderRadius: 12,
-                    overflow: "hidden",
-                    border: "1px solid #e5e5e5",
-                  }}
+                  className="section"
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      padding: "12px 14px",
-                      background: "#fff7ed",
-                      borderBottom:
-                        "1px solid #fed7aa",
-                    }}
-                  >
+                  <div className="leagueHeader">
                     {league.logo && (
                       <img
                         src={league.logo}
                         alt=""
-                        width={28}
-                        height={28}
-                        style={{
-                          objectFit: "contain",
-                        }}
+                        className="leagueLogo"
                       />
                     )}
 
                     <div>
-                      <div
-                        style={{
-                          fontWeight: 800,
-                          color: "#222",
-                        }}
-                      >
+                      <div className="leagueName">
                         {league.name}
                       </div>
 
-                      <div
-                        style={{
-                          fontSize: 12,
-                          color: "#888",
-                        }}
-                      >
+                      <div className="leagueCountry">
                         {league.country}
                       </div>
                     </div>
@@ -522,30 +742,12 @@ export default function Home() {
                       <a
                         key={match.fixture.id}
                         href={`/matches/${match.fixture.id}`}
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "70px 1fr 80px 34px",
-                          alignItems: "center",
-                          gap: 10,
-                          padding: "14px",
-                          textDecoration: "none",
-                          color: "#222",
-                          borderBottom:
-                            "1px solid #eee",
-                        }}
+                        className="match"
                       >
                         <div
-                          style={{
-                            textAlign: "center",
-                            fontSize: 13,
-                            color: isLive
-                              ? "#ea580c"
-                              : "#777",
-                            fontWeight: isLive
-                              ? 800
-                              : 600,
-                          }}
+                          className={`matchTime ${
+                            isLive ? "live" : ""
+                          }`}
                         >
                           {isLive
                             ? `${status}${
@@ -559,111 +761,59 @@ export default function Home() {
                             : time}
                         </div>
 
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 8,
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 8,
-                            }}
-                          >
+                        <div className="teams">
+                          <div className="team">
                             {match.teams.home.logo && (
                               <img
-                                src={
-                                  match.teams.home.logo
-                                }
+                                src={match.teams.home.logo}
                                 alt=""
-                                width={24}
-                                height={24}
-                                style={{
-                                  objectFit: "contain",
-                                }}
+                                className="teamLogo"
                               />
                             )}
 
-                            <span
-                              style={{
-                                fontSize: 14,
-                                fontWeight: 600,
-                              }}
-                            >
+                            <span className="teamName">
                               {match.teams.home.name}
                             </span>
                           </div>
 
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 8,
-                            }}
-                          >
+                          <div className="team">
                             {match.teams.away.logo && (
                               <img
-                                src={
-                                  match.teams.away.logo
-                                }
+                                src={match.teams.away.logo}
                                 alt=""
-                                width={24}
-                                height={24}
-                                style={{
-                                  objectFit: "contain",
-                                }}
+                                className="teamLogo"
                               />
                             )}
 
-                            <span
-                              style={{
-                                fontSize: 14,
-                                fontWeight: 600,
-                              }}
-                            >
+                            <span className="teamName">
                               {match.teams.away.name}
                             </span>
                           </div>
                         </div>
 
-                        <div
-                          style={{
-                            textAlign: "center",
-                            fontSize: 16,
-                            fontWeight: 800,
-                            lineHeight: 1.8,
-                          }}
-                        >
+                        <div className="scores">
                           <div>
                             {match.goals.home ?? "-"}
                           </div>
-
                           <div>
                             {match.goals.away ?? "-"}
                           </div>
                         </div>
 
                         <button
+                          className={`favorite ${
+                            favorites.includes(
+                              match.fixture.id
+                            )
+                              ? "active"
+                              : ""
+                          }`}
                           onClick={(e) =>
                             toggleFavorite(
                               e,
                               match.fixture.id
                             )
                           }
-                          style={{
-                            border: "none",
-                            background: "transparent",
-                            fontSize: 20,
-                            cursor: "pointer",
-                            color: favorites.includes(
-                              match.fixture.id
-                            )
-                              ? "#f97316"
-                              : "#bbb",
-                          }}
                         >
                           ★
                         </button>

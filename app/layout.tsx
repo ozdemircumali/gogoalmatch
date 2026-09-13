@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "GoGoalMatch - Match Details",
   description: "Live Scores, Results and Football Statistics",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

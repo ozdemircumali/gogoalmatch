@@ -1938,18 +1938,61 @@ export default function HomePage() {
             )}
           </div>
 
-          <div className="mt-8 border-t border-emerald-900/40 pt-5 text-center">
-            <p className="text-xs text-slate-600">
-              GoGoalMatch · Live Scores,
-              Results and Football
-              Statistics
-            </p>
+          <footer className="mt-10 border-t border-emerald-900/40 pt-6 pb-5">
+            <div className="text-center">
+              <p className="text-xs text-slate-500">
+                GoGoalMatch · Live Scores, Results and Football Statistics
+              </p>
 
-            <p className="mt-1 text-[10px] text-slate-700">
-              {finishedCount} finished matches
-              available today
+              <p className="mt-1 text-[10px] text-slate-700">
+                {finishedCount} finished matches available today
+              </p>
+            </div>
+
+            <nav
+              aria-label="Legal"
+              className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2"
+            >
+              <a
+                href="/privacy"
+                className="text-[11px] text-slate-500 transition hover:text-emerald-400"
+              >
+                Privacy Policy
+              </a>
+
+              <a
+                href="/terms"
+                className="text-[11px] text-slate-500 transition hover:text-emerald-400"
+              >
+                Terms of Use
+              </a>
+
+              <a
+                href="/cookies"
+                className="text-[11px] text-slate-500 transition hover:text-emerald-400"
+              >
+                Cookie Policy
+              </a>
+
+              <a
+                href="/disclaimer"
+                className="text-[11px] text-slate-500 transition hover:text-emerald-400"
+              >
+                Disclaimer
+              </a>
+
+              <a
+                href="/contact"
+                className="text-[11px] text-slate-500 transition hover:text-emerald-400"
+              >
+                Contact
+              </a>
+            </nav>
+
+            <p className="mt-5 text-center text-[10px] text-slate-700">
+              © {new Date().getFullYear()} GoGoalMatch. All rights reserved.
             </p>
-          </div>
+          </footer>
         </section>
       </div>
 
@@ -1980,63 +2023,6 @@ export default function HomePage() {
           </div>
         </div>
       )}
-
-      <footer className="mt-10 border-t border-emerald-900/50 bg-[#06110c]">
-        <div className="mx-auto max-w-7xl px-4 py-8">
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="text-base font-black text-white">
-                GoGoalMatch
-              </div>
-
-              <p className="mt-1 text-xs text-slate-500">
-                Live football scores, results and statistics.
-              </p>
-            </div>
-
-            <nav className="flex flex-wrap gap-x-5 gap-y-3 text-xs font-semibold text-slate-400">
-              <a
-                href="/privacy"
-                className="transition hover:text-emerald-400"
-              >
-                Privacy Policy
-              </a>
-
-              <a
-                href="/terms"
-                className="transition hover:text-emerald-400"
-              >
-                Terms of Service
-              </a>
-
-              <a
-                href="/cookies"
-                className="transition hover:text-emerald-400"
-              >
-                Cookie Policy
-              </a>
-
-              <a
-                href="/disclaimer"
-                className="transition hover:text-emerald-400"
-              >
-                Disclaimer
-              </a>
-
-              <a
-                href="/contact"
-                className="transition hover:text-emerald-400"
-              >
-                Contact Us
-              </a>
-            </nav>
-          </div>
-
-          <div className="mt-6 border-t border-emerald-900/30 pt-5 text-center text-[10px] text-slate-600">
-            © 2026 GoGoalMatch. All rights reserved.
-          </div>
-        </div>
-      </footer>
 
       <style jsx global>{`
         @keyframes shrink {

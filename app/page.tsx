@@ -1543,6 +1543,7 @@ export default function HomePage() {
                 }`}
               >
                 <span>All Leagues</span>
+
                 {!selectedLeagueId && (
                   <ChevronRight size={16} />
                 )}
@@ -1674,6 +1675,7 @@ export default function HomePage() {
                 <div className="text-lg font-black">
                   {matches.length}
                 </div>
+
                 <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   All
                 </div>
@@ -1692,6 +1694,7 @@ export default function HomePage() {
                 <div className="text-lg font-black text-red-400">
                   {liveCount}
                 </div>
+
                 <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   Live
                 </div>
@@ -1710,6 +1713,7 @@ export default function HomePage() {
                 <div className="text-lg font-black text-blue-400">
                   {upcomingCount}
                 </div>
+
                 <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   Upcoming
                 </div>
@@ -1728,6 +1732,7 @@ export default function HomePage() {
                 <div className="text-lg font-black text-yellow-400">
                   {favorites.length}
                 </div>
+
                 <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   Favorites
                 </div>
@@ -1766,6 +1771,7 @@ export default function HomePage() {
                   size={28}
                   className="mx-auto mb-3 animate-spin text-emerald-400"
                 />
+
                 <p className="text-sm font-semibold text-slate-300">
                   Loading matches...
                 </p>
@@ -1797,20 +1803,20 @@ export default function HomePage() {
                 <a
                   key={match.id}
                   href={`/matches/${match.id}`}
-                  className="group block rounded-2xl border border-emerald-900/50 bg-[#0a1b14] p-4 transition hover:border-emerald-500/40 hover:bg-[#0d2119]"
+                  className="group block overflow-hidden rounded-2xl border border-emerald-900/50 bg-[#0a1b14] p-4 transition hover:border-emerald-500/40 hover:bg-[#0d2119]"
                 >
                   <div className="mb-3 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate text-xs font-bold text-emerald-400">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="shrink-0 text-xs font-bold text-emerald-400">
                           {match.country}
                         </span>
 
-                        <span className="text-slate-700">
+                        <span className="shrink-0 text-slate-700">
                           /
                         </span>
 
-                        <span className="truncate text-xs text-slate-400">
+                        <span className="min-w-0 truncate text-xs text-slate-400">
                           {match.leagueName}
                         </span>
                       </div>
@@ -1839,33 +1845,45 @@ export default function HomePage() {
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                    <div className="flex min-w-0 items-center justify-end gap-3">
-                      <span className="truncate text-right text-sm font-bold sm:text-base">
+                  {/* TEAM ROW - FIXED */}
+                  <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_72px_minmax(0,1fr)] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_90px_minmax(0,1fr)] sm:gap-3">
+
+                    {/* HOME TEAM */}
+                    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_40px] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_44px] sm:gap-3">
+                      <span
+                        className="min-w-0 text-right text-sm font-bold leading-snug text-white sm:text-base"
+                        style={{
+                          overflowWrap:
+                            "anywhere",
+                          wordBreak:
+                            "break-word",
+                        }}
+                      >
                         {match.homeTeam}
                       </span>
 
                       {match.homeLogo ? (
-                        <img
-                          src={
-                            match.homeLogo
-                          }
-                          alt=""
-                          className="h-9 w-9 shrink-0 object-contain"
-                        />
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center sm:h-11 sm:w-11">
+                          <img
+                            src={match.homeLogo}
+                            alt={match.homeTeam}
+                            className="max-h-10 max-w-10 object-contain sm:max-h-11 sm:max-w-11"
+                          />
+                        </div>
                       ) : (
-                        <div className="h-9 w-9 shrink-0 rounded-full bg-slate-800" />
+                        <div className="h-10 w-10 shrink-0 rounded-full bg-slate-800 sm:h-11 sm:w-11" />
                       )}
                     </div>
 
-                    <div className="min-w-[58px] text-center">
+                    {/* SCORE / TIME */}
+                    <div className="w-[72px] min-w-[72px] text-center sm:w-[90px] sm:min-w-[90px]">
                       {match.isLive ? (
                         <>
                           <div className="mb-1 text-[10px] font-black uppercase tracking-wider text-red-400">
                             LIVE
                           </div>
 
-                          <div className="text-xl font-black">
+                          <div className="text-xl font-black leading-none sm:text-2xl">
                             {match.homeScore}
                             <span className="mx-1 text-slate-600">
                               -
@@ -1873,7 +1891,7 @@ export default function HomePage() {
                             {match.awayScore}
                           </div>
 
-                          <div className="text-[10px] font-bold text-emerald-400">
+                          <div className="mt-1 text-[10px] font-bold text-emerald-400">
                             {match.minute}
                           </div>
                         </>
@@ -1883,7 +1901,7 @@ export default function HomePage() {
                             FT
                           </div>
 
-                          <div className="text-xl font-black">
+                          <div className="text-xl font-black leading-none sm:text-2xl">
                             {match.homeScore}
                             <span className="mx-1 text-slate-600">
                               -
@@ -1904,20 +1922,29 @@ export default function HomePage() {
                       )}
                     </div>
 
-                    <div className="flex min-w-0 items-center gap-3">
+                    {/* AWAY TEAM */}
+                    <div className="grid min-w-0 grid-cols-[40px_minmax(0,1fr)] items-center gap-2 sm:grid-cols-[44px_minmax(0,1fr)] sm:gap-3">
                       {match.awayLogo ? (
-                        <img
-                          src={
-                            match.awayLogo
-                          }
-                          alt=""
-                          className="h-9 w-9 shrink-0 object-contain"
-                        />
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center sm:h-11 sm:w-11">
+                          <img
+                            src={match.awayLogo}
+                            alt={match.awayTeam}
+                            className="max-h-10 max-w-10 object-contain sm:max-h-11 sm:max-w-11"
+                          />
+                        </div>
                       ) : (
-                        <div className="h-9 w-9 shrink-0 rounded-full bg-slate-800" />
+                        <div className="h-10 w-10 shrink-0 rounded-full bg-slate-800 sm:h-11 sm:w-11" />
                       )}
 
-                      <span className="truncate text-sm font-bold sm:text-base">
+                      <span
+                        className="min-w-0 text-left text-sm font-bold leading-snug text-white sm:text-base"
+                        style={{
+                          overflowWrap:
+                            "anywhere",
+                          wordBreak:
+                            "break-word",
+                        }}
+                      >
                         {match.awayTeam}
                       </span>
                     </div>
@@ -2029,6 +2056,7 @@ export default function HomePage() {
           from {
             width: 100%;
           }
+
           to {
             width: 0%;
           }

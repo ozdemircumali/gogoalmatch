@@ -2,14 +2,11 @@ import Link from "next/link";
 import { LEAGUES } from "@/lib/leagues";
 
 export default function LeaguesPage() {
-  const countries = Array.from(
-    new Set(LEAGUES.map((league) => league.country))
-  );
-
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-6 text-slate-100">
-      <div className="mx-auto max-w-6xl">
-        <header className="flex items-center justify-between">
+    <main className="min-h-screen bg-slate-950 text-slate-100">
+      <div className="mx-auto max-w-6xl px-4 py-6">
+
+        <header className="flex items-center justify-between border-b border-slate-800 pb-5">
           <Link
             href="/"
             className="text-xl font-bold text-white"
@@ -25,62 +22,63 @@ export default function LeaguesPage() {
           </Link>
         </header>
 
-        <section className="mt-8">
-          <p className="text-xs uppercase tracking-wider text-emerald-400">
+        <section className="py-8">
+          <p className="text-xs font-semibold uppercase tracking-widest text-emerald-400">
             Football
           </p>
 
-          <h1 className="mt-1 text-3xl font-bold">
+          <h1 className="mt-2 text-3xl font-bold text-white">
             Leagues
           </h1>
 
-          <p className="mt-2 text-sm text-slate-500">
+          <p className="mt-2 text-sm text-slate-400">
             Standings, fixtures, results and upcoming matches.
           </p>
         </section>
 
-        <div className="mt-8 space-y-8">
-          {countries.map((country) => {
-            const leagues = LEAGUES.filter(
-              (league) => league.country === country
-            );
+        <div className="space-y-8">
+          {LEAGUES.map((league) => (
+            <Link
+              key={league.id}
+              href={`/leagues/${league.slug}`}
+              className="block rounded-2xl border border-slate-800 bg-slate-900 p-5 transition hover:border-emerald-700 hover:bg-slate-800"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-white">
+                    {league.name}
+                  </h2>
 
-            return (
-              <section key={country}>
-                <h2 className="mb-3 text-lg font-bold">
-                  {country}
-                </h2>
-
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {leagues.map((league) => (
-                    <Link
-                      key={league.id}
-                      href={`/leagues/${league.slug}`}
-                      className="rounded-2xl border border-slate-800 bg-slate-900 p-4 transition hover:border-emerald-800 hover:bg-slate-900/80"
-                    >
-                      <p className="font-semibold">
-                        {league.name}
-                      </p>
-
-                      <p className="mt-1 text-xs text-slate-500">
-                        Standings · Fixtures · Results
-                      </p>
-                    </Link>
-                  ))}
+                  <p className="mt-1 text-sm text-slate-500">
+                    {league.country}
+                  </p>
                 </div>
-              </section>
-            );
-          })}
+
+                <span className="text-slate-500">
+                  →
+                </span>
+              </div>
+
+              <p className="mt-4 text-xs text-slate-600">
+                Standings · Fixtures · Results · Upcoming
+              </p>
+            </Link>
+          ))}
         </div>
 
         <footer className="mt-10 border-t border-slate-800 py-6 text-center">
           <Link
             href="/"
-            className="text-sm text-emerald-400 hover:text-emerald-300"
+            className="text-sm font-semibold text-emerald-400"
           >
             GoGoalMatch
           </Link>
+
+          <p className="mt-2 text-xs text-slate-600">
+            Live Scores, Results and Football Statistics
+          </p>
         </footer>
+
       </div>
     </main>
   );

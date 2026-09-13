@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 import crypto from "crypto";
 
-const redisUrl = process.env.KV_REST_API_URL;
-const redisToken = process.env.KV_REST_API_TOKEN;
+const redisUrl = process.env.kv_rest_api_url;
+const redisToken = process.env.kv_rest_api_token;
 
 export async function POST(request: Request) {
   try {

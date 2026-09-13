@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 type Match = {
@@ -99,7 +100,7 @@ export default function MatchesPage() {
             gap: "20px",
           }}
         >
-          <a
+          <Link
             href="/"
             style={{
               color: "#ffffff",
@@ -110,7 +111,7 @@ export default function MatchesPage() {
             }}
           >
             GoGoalMatch
-          </a>
+          </Link>
 
           <nav
             style={{

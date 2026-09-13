@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function MatchDetailPage() {
   const stats = [
     { label: "Ball Possession", home: "54%", away: "46%", homeVal: 54, awayVal: 46 },
@@ -20,13 +22,23 @@ export default function MatchDetailPage() {
 
   return (
     <main className="max-w-4xl mx-auto p-4 space-y-4">
-      {/* Top Breadcrumb Header */}
-      <div className="flex items-center space-x-2 text-slate-400 text-sm py-2">
-        <span className="cursor-pointer hover:text-white transition">← Matches</span>
-        <span>/</span>
-        <span>Home</span>
-        <span>/</span>
-        <span className="text-emerald-400 font-medium">Serie A</span>
+      {/* Navbar & Navigation */}
+      <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-2">
+        <Link 
+          href="/" 
+          className="text-2xl font-black text-white hover:text-emerald-400 transition tracking-tight"
+        >
+          GoGoal<span className="text-emerald-500">Match</span>
+        </Link>
+        <div className="flex items-center space-x-2 text-slate-400 text-xs sm:text-sm">
+          <Link href="/" className="hover:text-white transition">
+            ← Matches
+          </Link>
+          <span>/</span>
+          <span>Home</span>
+          <span>/</span>
+          <span className="text-emerald-400 font-medium">Serie A</span>
+        </div>
       </div>
 
       {/* Main Score Board Card */}

@@ -1,0 +1,10 @@
+{
+  "name": "GoGoalMatch",
+  "short_name": "GoGoalMatch",
+  "description": "Live football scores and match alerts",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0e14",
+  "theme_color": "#0b0e14",
+  "orientation": "portrait"
+}

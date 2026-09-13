@@ -2,13 +2,27 @@ import { NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
 import crypto from "crypto";
 
-const redis = Redis.fromEnv();
+const redisUrl = process.env.KV_REST_API_URL;
+const redisToken = process.env.KV_REST_API_TOKEN;
 
 export async function POST(request: Request) {
   try {
+    if (!redisUrl || !redisToken) {
+      return NextResponse.json(
+        { error: "Redis environment variables are not configured" },
+        { status: 500 }
+      );
+    }
+
+    const redis = new Redis({
+      url: redisUrl,
+      token: redisToken,
+    });
+
     const body = await request.json();
 
     const subscription = body?.subscription;
+
     const favorites = Array.isArray(body?.favorites)
       ? body.favorites.map(String)
       : [];

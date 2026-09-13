@@ -1729,7 +1729,7 @@ export default function HomePage() {
                     : "border-emerald-900/50 bg-[#0a1b14]"
                 }`}
               >
-                <div className="text-lg font-black text-yellow-400">
+                <div className="text-lg font-black">
                   {favorites.length}
                 </div>
 
@@ -1845,29 +1845,51 @@ export default function HomePage() {
                     </button>
                   </div>
 
-                  {/* TEAM ROW - FIXED */}
-                  <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_72px_minmax(0,1fr)] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_90px_minmax(0,1fr)] sm:gap-3">
-
+                  {/* TEAM ROW - SAFARI / MOBILE */}
+                  <div
+                    className="flex w-full min-w-0 items-center gap-2 sm:gap-4"
+                    style={{
+                      WebkitBoxSizing: "border-box",
+                      boxSizing: "border-box",
+                    }}
+                  >
                     {/* HOME TEAM */}
-                    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_40px] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_44px] sm:gap-3">
-                      <span
-                        className="min-w-0 text-right text-sm font-bold leading-snug text-white sm:text-base"
+                    <div
+                      className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3"
+                      style={{
+                        minWidth: 0,
+                        flexBasis: 0,
+                      }}
+                    >
+                      <div
+                        className="min-w-0 flex-1 text-right"
                         style={{
-                          overflowWrap:
-                            "anywhere",
-                          wordBreak:
-                            "break-word",
+                          minWidth: 0,
+                          overflow: "visible",
                         }}
                       >
-                        {match.homeTeam}
-                      </span>
+                        <span
+                          className="block text-sm font-bold leading-snug text-white sm:text-base"
+                          style={{
+                            whiteSpace: "normal",
+                            overflowWrap: "break-word",
+                            wordBreak: "break-word",
+                            color: "#ffffff",
+                            display: "block",
+                            visibility: "visible",
+                            opacity: 1,
+                          }}
+                        >
+                          {match.homeTeam}
+                        </span>
+                      </div>
 
                       {match.homeLogo ? (
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center sm:h-11 sm:w-11">
                           <img
                             src={match.homeLogo}
                             alt={match.homeTeam}
-                            className="max-h-10 max-w-10 object-contain sm:max-h-11 sm:max-w-11"
+                            className="block max-h-10 max-w-10 object-contain sm:max-h-11 sm:max-w-11"
                           />
                         </div>
                       ) : (
@@ -1876,7 +1898,14 @@ export default function HomePage() {
                     </div>
 
                     {/* SCORE / TIME */}
-                    <div className="w-[72px] min-w-[72px] text-center sm:w-[90px] sm:min-w-[90px]">
+                    <div
+                      className="shrink-0 text-center"
+                      style={{
+                        width: "68px",
+                        minWidth: "68px",
+                        flex: "0 0 68px",
+                      }}
+                    >
                       {match.isLive ? (
                         <>
                           <div className="mb-1 text-[10px] font-black uppercase tracking-wider text-red-400">
@@ -1923,30 +1952,47 @@ export default function HomePage() {
                     </div>
 
                     {/* AWAY TEAM */}
-                    <div className="grid min-w-0 grid-cols-[40px_minmax(0,1fr)] items-center gap-2 sm:grid-cols-[44px_minmax(0,1fr)] sm:gap-3">
+                    <div
+                      className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3"
+                      style={{
+                        minWidth: 0,
+                        flexBasis: 0,
+                      }}
+                    >
                       {match.awayLogo ? (
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center sm:h-11 sm:w-11">
                           <img
                             src={match.awayLogo}
                             alt={match.awayTeam}
-                            className="max-h-10 max-w-10 object-contain sm:max-h-11 sm:max-w-11"
+                            className="block max-h-10 max-w-10 object-contain sm:max-h-11 sm:max-w-11"
                           />
                         </div>
                       ) : (
                         <div className="h-10 w-10 shrink-0 rounded-full bg-slate-800 sm:h-11 sm:w-11" />
                       )}
 
-                      <span
-                        className="min-w-0 text-left text-sm font-bold leading-snug text-white sm:text-base"
+                      <div
+                        className="min-w-0 flex-1 text-left"
                         style={{
-                          overflowWrap:
-                            "anywhere",
-                          wordBreak:
-                            "break-word",
+                          minWidth: 0,
+                          overflow: "visible",
                         }}
                       >
-                        {match.awayTeam}
-                      </span>
+                        <span
+                          className="block text-sm font-bold leading-snug text-white sm:text-base"
+                          style={{
+                            whiteSpace: "normal",
+                            overflowWrap: "break-word",
+                            wordBreak: "break-word",
+                            color: "#ffffff",
+                            display: "block",
+                            visibility: "visible",
+                            opacity: 1,
+                          }}
+                        >
+                          {match.awayTeam}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -2068,6 +2114,13 @@ export default function HomePage() {
 
         body {
           margin: 0;
+          overflow-x: hidden;
+        }
+
+        *,
+        *::before,
+        *::after {
+          box-sizing: border-box;
         }
 
         ::-webkit-scrollbar {

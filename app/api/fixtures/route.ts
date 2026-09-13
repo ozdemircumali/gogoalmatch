@@ -10,32 +10,60 @@ export async function GET() {
     );
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  // New York tarihini kullanıyoruz.
+  // UTC tarihi kullanmak, akşam saatlerinde yanlış günün maçlarını getirebilir.
+  const now = new Date();
+
+  const newYorkDate = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
 
   try {
-    const response = await fetch(
-      `https://v3.football.api-sports.io/fixtures?date=${today}`,
-      {
-        headers: {
-          "x-apisports-key": apiKey,
-        },
-        cache: "no-store",
-      }
-    );
+    const url =
+      `https://v3.football.api-sports.io/fixtures` +
+      `?date=${newYorkDate}` +
+      `&timezone=America/New_York`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "x-apisports-key": apiKey,
+      },
+      cache: "no-store",
+    });
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: `API request failed: ${response.status}` },
+        {
+          error: `API request failed: ${response.status}`,
+        },
         { status: response.status }
       );
     }
 
     const data = await response.json();
 
+    if (data.errors && Object.keys(data.errors).length > 0) {
+      return NextResponse.json(
+        {
+          error: "API-Football returned an error",
+          details: data.errors,
+        },
+        { status: 502 }
+      );
+    }
+
     return NextResponse.json(data);
-  } catch {
+  } catch (error) {
+    console.error("Fixtures API error:", error);
+
     return NextResponse.json(
-      { error: "Failed to fetch football data" },
+      {
+        error: "Failed to fetch football data",
+      },
       { status: 500 }
     );
   }

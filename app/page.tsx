@@ -141,13 +141,9 @@ const ALERTS_ENABLED_KEY = "ggm_alerts_enabled";
 let audioContext: AudioContext | null = null;
 
 function getAudioContext(): AudioContext | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
+  if (typeof window === "undefined") return null;
 
-  if (audioContext) {
-    return audioContext;
-  }
+  if (audioContext) return audioContext;
 
   try {
     const AudioContextClass =
@@ -158,9 +154,7 @@ function getAudioContext(): AudioContext | null {
         }
       ).webkitAudioContext;
 
-    if (!AudioContextClass) {
-      return null;
-    }
+    if (!AudioContextClass) return null;
 
     audioContext = new AudioContextClass();
 
@@ -180,9 +174,7 @@ function playTone(
 ) {
   const ctx = getAudioContext();
 
-  if (!ctx) {
-    return;
-  }
+  if (!ctx) return;
 
   try {
     const oscillator = ctx.createOscillator();
@@ -212,179 +204,51 @@ function playTone(
     oscillator.start(start);
     oscillator.stop(end + 0.03);
   } catch (error) {
-    console.error(
-      "Tone playback error:",
-      error
-    );
+    console.error("Tone playback error:", error);
   }
 }
 
 function playTestSound() {
-  const ctx = getAudioContext();
-
-  if (!ctx) {
-    return;
-  }
-
-  playTone(
-    600,
-    0.18,
-    0,
-    0.22,
-    "sine"
-  );
-
-  playTone(
-    800,
-    0.18,
-    0.22,
-    0.22,
-    "sine"
-  );
-
-  playTone(
-    1000,
-    0.28,
-    0.44,
-    0.24,
-    "sine"
-  );
+  playTone(600, 0.18, 0, 0.22, "sine");
+  playTone(800, 0.18, 0.22, 0.22, "sine");
+  playTone(1000, 0.28, 0.44, 0.24, "sine");
 }
 
 function playGoalSound() {
-  playTone(
-    523,
-    0.18,
-    0,
-    0.18,
-    "sawtooth"
-  );
-
-  playTone(
-    659,
-    0.18,
-    0.18,
-    0.18,
-    "sawtooth"
-  );
-
-  playTone(
-    784,
-    0.2,
-    0.36,
-    0.2,
-    "sawtooth"
-  );
-
-  playTone(
-    1047,
-    0.5,
-    0.56,
-    0.22,
-    "sawtooth"
-  );
+  playTone(523, 0.18, 0, 0.18, "sawtooth");
+  playTone(659, 0.18, 0.18, 0.18, "sawtooth");
+  playTone(784, 0.2, 0.36, 0.2, "sawtooth");
+  playTone(1047, 0.5, 0.56, 0.22, "sawtooth");
 }
 
 function playYellowSound() {
-  playTone(
-    880,
-    0.15,
-    0,
-    0.16,
-    "square"
-  );
-
-  playTone(
-    660,
-    0.2,
-    0.18,
-    0.14,
-    "square"
-  );
+  playTone(880, 0.15, 0, 0.16, "square");
+  playTone(660, 0.2, 0.18, 0.14, "square");
 }
 
 function playRedSound() {
-  playTone(
-    900,
-    0.15,
-    0,
-    0.18,
-    "sawtooth"
-  );
-
-  playTone(
-    450,
-    0.3,
-    0.2,
-    0.16,
-    "sawtooth"
-  );
-
-  playTone(
-    900,
-    0.15,
-    0.55,
-    0.18,
-    "sawtooth"
-  );
+  playTone(900, 0.15, 0, 0.18, "sawtooth");
+  playTone(450, 0.3, 0.2, 0.16, "sawtooth");
+  playTone(900, 0.15, 0.55, 0.18, "sawtooth");
 }
 
 function playPenaltySound() {
-  playTone(
-    1000,
-    0.13,
-    0,
-    0.17,
-    "square"
-  );
-
-  playTone(
-    700,
-    0.2,
-    0.18,
-    0.15,
-    "square"
-  );
-
-  playTone(
-    1000,
-    0.13,
-    0.45,
-    0.17,
-    "square"
-  );
+  playTone(1000, 0.13, 0, 0.17, "square");
+  playTone(700, 0.2, 0.18, 0.15, "square");
+  playTone(1000, 0.13, 0.45, 0.17, "square");
 }
 
 function playVarSound() {
-  playTone(
-    660,
-    0.14,
-    0,
-    0.14,
-    "triangle"
-  );
-
-  playTone(
-    880,
-    0.14,
-    0.17,
-    0.14,
-    "triangle"
-  );
+  playTone(660, 0.14, 0, 0.14, "triangle");
+  playTone(880, 0.14, 0.17, 0.14, "triangle");
 }
 
 function playAlertSound(type: AlertType) {
-  if (type === "goal") {
-    playGoalSound();
-  } else if (type === "yellow") {
-    playYellowSound();
-  } else if (type === "red") {
-    playRedSound();
-  } else if (type === "penalty") {
-    playPenaltySound();
-  } else if (type === "var") {
-    playVarSound();
-  }
+  if (type === "goal") playGoalSound();
+  else if (type === "yellow") playYellowSound();
+  else if (type === "red") playRedSound();
+  else if (type === "penalty") playPenaltySound();
+  else if (type === "var") playVarSound();
 }
 
 function convertFixture(
@@ -392,13 +256,10 @@ function convertFixture(
 ): Match | null {
   const id = fixture.fixture?.id;
 
-  if (!id) {
-    return null;
-  }
+  if (!id) return null;
 
   const status =
-    fixture.fixture?.status?.short ||
-    "NS";
+    fixture.fixture?.status?.short || "NS";
 
   const elapsed =
     fixture.fixture?.status?.elapsed;
@@ -415,13 +276,10 @@ function convertFixture(
   let minute = "";
 
   if (isLive) {
-    if (status === "HT") {
-      minute = "HT";
-    } else if (status === "BT") {
-      minute = "BT";
-    } else if (status === "P") {
-      minute = "P";
-    } else if (
+    if (status === "HT") minute = "HT";
+    else if (status === "BT") minute = "BT";
+    else if (status === "P") minute = "P";
+    else if (
       elapsed !== null &&
       elapsed !== undefined
     ) {
@@ -448,32 +306,20 @@ function convertFixture(
     status,
     isLive,
     isFinished,
-    isUpcoming:
-      !isLive && !isFinished,
-    homeTeam:
-      home?.name || "Home",
-    homeLogo:
-      home?.logo || "",
-    homeScore:
-      fixture.goals?.home ??
-      "-",
-    awayTeam:
-      away?.name || "Away",
-    awayLogo:
-      away?.logo || "",
-    awayScore:
-      fixture.goals?.away ??
-      "-",
+    isUpcoming: !isLive && !isFinished,
+    homeTeam: home?.name || "Home",
+    homeLogo: home?.logo || "",
+    homeScore: fixture.goals?.home ?? "-",
+    awayTeam: away?.name || "Away",
+    awayLogo: away?.logo || "",
+    awayScore: fixture.goals?.away ?? "-",
     leagueId: String(
-      fixture.league?.id ||
-        "unknown"
+      fixture.league?.id || "unknown"
     ),
     leagueName:
-      fixture.league?.name ||
-      "Unknown League",
+      fixture.league?.name || "Unknown League",
     country:
-      fixture.league?.country ||
-      "",
+      fixture.league?.country || "",
   };
 }
 
@@ -503,38 +349,24 @@ function getAlertType(
     event.detail?.toLowerCase() || "";
 
   if (type === "goal") {
-    if (
-      detail.includes("missed")
-    ) {
-      return null;
-    }
-
+    if (detail.includes("missed")) return null;
     return "goal";
   }
 
   if (type === "card") {
-    if (
-      detail.includes("red")
-    ) {
-      return "red";
-    }
-
+    if (detail.includes("red")) return "red";
     return "yellow";
   }
 
   if (type === "var") {
-    if (
-      detail.includes("penalty")
-    ) {
+    if (detail.includes("penalty")) {
       return "penalty";
     }
 
     return "var";
   }
 
-  if (
-    detail.includes("penalty")
-  ) {
+  if (detail.includes("penalty")) {
     return "penalty";
   }
 
@@ -544,44 +376,20 @@ function getAlertType(
 function getEventTitle(
   type: AlertType
 ) {
-  if (type === "goal") {
-    return "GOOOOOL!";
-  }
-
-  if (type === "yellow") {
-    return "YELLOW CARD";
-  }
-
-  if (type === "red") {
-    return "RED CARD";
-  }
-
-  if (type === "penalty") {
-    return "PENALTY";
-  }
-
+  if (type === "goal") return "GOOOOOL!";
+  if (type === "yellow") return "YELLOW CARD";
+  if (type === "red") return "RED CARD";
+  if (type === "penalty") return "PENALTY";
   return "VAR";
 }
 
 function getEventIcon(
   type: AlertType
 ) {
-  if (type === "goal") {
-    return "⚽";
-  }
-
-  if (type === "yellow") {
-    return "🟨";
-  }
-
-  if (type === "red") {
-    return "🟥";
-  }
-
-  if (type === "penalty") {
-    return "⚽";
-  }
-
+  if (type === "goal") return "⚽";
+  if (type === "yellow") return "🟨";
+  if (type === "red") return "🟥";
+  if (type === "penalty") return "⚽";
   return "📺";
 }
 
@@ -590,17 +398,11 @@ function urlBase64ToUint8Array(
 ): Uint8Array {
   const padding =
     "=".repeat(
-      (4 -
-        (base64String.length %
-          4)) %
-        4
+      (4 - (base64String.length % 4)) % 4
     );
 
   const base64 =
-    (
-      base64String +
-      padding
-    )
+    (base64String + padding)
       .replace(/-/g, "+")
       .replace(/_/g, "/");
 
@@ -609,8 +411,7 @@ function urlBase64ToUint8Array(
 
   return Uint8Array.from(
     Array.from(rawData).map(
-      (char) =>
-        char.charCodeAt(0)
+      (char) => char.charCodeAt(0)
     )
   );
 }
@@ -650,17 +451,14 @@ export default function HomePage() {
     useState<AlertMessage | null>(null);
 
   const knownEventsRef =
-    useRef<
-      Map<string, Set<string>>
-    >(new Map());
+    useRef<Map<string, Set<string>>>(
+      new Map()
+    );
 
   const previousScoresRef =
     useRef<Map<string, string>>(
       new Map()
     );
-
-  const initializedMatchesRef =
-    useRef<Set<string>>(new Set());
 
   const alertsEnabledRef =
     useRef(false);
@@ -721,29 +519,20 @@ export default function HomePage() {
         favoriteIds: string[]
       ) => {
         if (
-          typeof window ===
-          "undefined"
+          typeof window === "undefined"
         ) {
           return false;
         }
 
         if (
-          !("serviceWorker" in
-            navigator)
+          !("serviceWorker" in navigator)
         ) {
-          console.error(
-            "Service Worker is not supported."
-          );
           return false;
         }
 
         if (
-          !("PushManager" in
-            window)
+          !("PushManager" in window)
         ) {
-          console.error(
-            "Web Push is not supported."
-          );
           return false;
         }
 
@@ -809,9 +598,7 @@ export default function HomePage() {
         const subscription =
           pushSubscriptionRef.current;
 
-        if (!subscription) {
-          return;
-        }
+        if (!subscription) return;
 
         await savePushSubscription(
           subscription,
@@ -929,92 +716,88 @@ export default function HomePage() {
       []
     );
 
-  const enableAlerts = async () => {
-    const ctx =
-      getAudioContext();
+  const enableAlerts =
+    async () => {
+      const ctx =
+        getAudioContext();
 
-    if (ctx) {
-      if (
-        ctx.state ===
-        "suspended"
-      ) {
-        void ctx.resume();
+      if (ctx) {
+        if (
+          ctx.state ===
+          "suspended"
+        ) {
+          void ctx.resume();
+        }
+
+        playTestSound();
       }
 
-      playTestSound();
-    }
+      alertsEnabledRef.current =
+        true;
 
-    alertsEnabledRef.current =
-      true;
+      setAlertsEnabled(true);
 
-    setAlertsEnabled(true);
-
-    try {
-      localStorage.setItem(
-        ALERTS_ENABLED_KEY,
-        "true"
-      );
-    } catch {}
-
-    if (
-      typeof window ===
-        "undefined" ||
-      !("Notification" in window)
-    ) {
-      return;
-    }
-
-    try {
-      let permission =
-        Notification.permission;
-
-      if (
-        permission === "default"
-      ) {
-        permission =
-          await Notification.requestPermission();
-      }
-
-      if (
-        permission !== "granted"
-      ) {
-        console.error(
-          "Notification permission was not granted."
+      try {
+        localStorage.setItem(
+          ALERTS_ENABLED_KEY,
+          "true"
         );
+      } catch {}
+
+      if (
+        typeof window ===
+          "undefined" ||
+        !("Notification" in window)
+      ) {
         return;
       }
 
-      await setupPushSubscription(
-        favorites
-      );
-    } catch (error) {
-      console.error(
-        "Alert enable error:",
-        error
-      );
-    }
-  };
+      try {
+        let permission =
+          Notification.permission;
 
-  const disableAlerts = () => {
-    alertsEnabledRef.current =
-      false;
+        if (
+          permission === "default"
+        ) {
+          permission =
+            await Notification.requestPermission();
+        }
 
-    setAlertsEnabled(false);
+        if (
+          permission !== "granted"
+        ) {
+          return;
+        }
 
-    try {
-      localStorage.setItem(
-        ALERTS_ENABLED_KEY,
-        "false"
-      );
-    } catch {}
-  };
+        await setupPushSubscription(
+          favorites
+        );
+      } catch (error) {
+        console.error(
+          "Alert enable error:",
+          error
+        );
+      }
+    };
+
+  const disableAlerts =
+    () => {
+      alertsEnabledRef.current =
+        false;
+
+      setAlertsEnabled(false);
+
+      try {
+        localStorage.setItem(
+          ALERTS_ENABLED_KEY,
+          "false"
+        );
+      } catch {}
+    };
 
   const checkFavoriteMatchAlerts =
     useCallback(async () => {
-      if (
-        favorites.length ===
-        0
-      ) {
+      if (favorites.length === 0) {
         return;
       }
 
@@ -1028,8 +811,7 @@ export default function HomePage() {
         );
 
       if (
-        favoriteMatches.length ===
-        0
+        favoriteMatches.length === 0
       ) {
         return;
       }
@@ -1047,9 +829,7 @@ export default function HomePage() {
                   }
                 );
 
-              if (
-                !response.ok
-              ) {
+              if (!response.ok) {
                 return;
               }
 
@@ -1065,9 +845,7 @@ export default function HomePage() {
                   ? data.response[0]
                   : undefined;
 
-              if (!detail) {
-                return;
-              }
+              if (!detail) return;
 
               const events =
                 Array.isArray(
@@ -1097,10 +875,6 @@ export default function HomePage() {
                 previousScoresRef.current.set(
                   match.id,
                   `${detail.goals?.home ?? "-"}-${detail.goals?.away ?? "-"}`
-                );
-
-                initializedMatchesRef.current.add(
-                  match.id
                 );
 
                 return;
@@ -1135,13 +909,13 @@ export default function HomePage() {
                 currentScore
               );
 
-              for (const event of newEvents) {
+              for (
+                const event of newEvents
+              ) {
                 const type =
                   getAlertType(event);
 
-                if (!type) {
-                  continue;
-                }
+                if (!type) continue;
 
                 const minute =
                   event.time?.elapsed !==
@@ -1158,12 +932,12 @@ export default function HomePage() {
                   type === "goal" &&
                   event.player?.name
                 ) {
-                  text += ` · ${event.player.name}${minute}`;
+                  text +=
+                    ` · ${event.player.name}${minute}`;
                 }
 
                 if (
-                  type ===
-                    "yellow" ||
+                  type === "yellow" ||
                   type === "red"
                 ) {
                   text =
@@ -1175,8 +949,7 @@ export default function HomePage() {
                 }
 
                 if (
-                  type ===
-                    "penalty" ||
+                  type === "penalty" ||
                   type === "var"
                 ) {
                   text =
@@ -1199,10 +972,7 @@ export default function HomePage() {
                 if (
                   alertsEnabledRef.current
                 ) {
-                  playAlertSound(
-                    type
-                  );
-
+                  playAlertSound(type);
                   sendBrowserNotification(
                     alert
                   );
@@ -1231,7 +1001,6 @@ export default function HomePage() {
                   alertsEnabledRef.current
                 ) {
                   playGoalSound();
-
                   sendBrowserNotification(
                     alert
                   );
@@ -1275,21 +1044,14 @@ export default function HomePage() {
 
   useEffect(() => {
     if (
-      typeof window ===
-        "undefined" ||
-      !("serviceWorker" in
-        navigator)
+      typeof window === "undefined" ||
+      !("serviceWorker" in navigator)
     ) {
       return;
     }
 
     navigator.serviceWorker
       .register("/sw.js")
-      .then(() => {
-        console.log(
-          "GoGoalMatch Service Worker registered."
-        );
-      })
       .catch((error) => {
         console.error(
           "Service Worker registration failed:",
@@ -1311,9 +1073,7 @@ export default function HomePage() {
             savedFavorites
           );
 
-        if (
-          Array.isArray(parsed)
-        ) {
+        if (Array.isArray(parsed)) {
           setFavorites(
             parsed.map(String)
           );
@@ -1360,19 +1120,12 @@ export default function HomePage() {
   ]);
 
   useEffect(() => {
-    if (
-      !alertsEnabled
-    ) {
-      return;
-    }
+    if (!alertsEnabled) return;
 
     if (
-      typeof window ===
-        "undefined" ||
-      !("serviceWorker" in
-        navigator) ||
-      !("PushManager" in
-        window)
+      typeof window === "undefined" ||
+      !("serviceWorker" in navigator) ||
+      !("PushManager" in window)
     ) {
       return;
     }
@@ -1381,8 +1134,7 @@ export default function HomePage() {
       async () => {
         try {
           const permission =
-            "Notification" in
-            window
+            "Notification" in window
               ? Notification.permission
               : "default";
 
@@ -1399,9 +1151,7 @@ export default function HomePage() {
           const subscription =
             await registration.pushManager.getSubscription();
 
-          if (!subscription) {
-            return;
-          }
+          if (!subscription) return;
 
           pushSubscriptionRef.current =
             subscription;
@@ -1426,18 +1176,16 @@ export default function HomePage() {
   ]);
 
   useEffect(() => {
-    if (
-      favorites.length ===
-      0
-    ) {
+    if (favorites.length === 0) {
       return;
     }
 
-    checkFavoriteMatchAlerts();
+    void checkFavoriteMatchAlerts();
 
     const interval =
       window.setInterval(
-        checkFavoriteMatchAlerts,
+        () =>
+          void checkFavoriteMatchAlerts(),
         30000
       );
 
@@ -1473,9 +1221,7 @@ export default function HomePage() {
         try {
           localStorage.setItem(
             FAVORITES_KEY,
-            JSON.stringify(
-              next
-            )
+            JSON.stringify(next)
           );
         } catch {}
 
@@ -1483,9 +1229,7 @@ export default function HomePage() {
           pushSubscriptionRef.current &&
           alertsEnabledRef.current
         ) {
-          void updatePushFavorites(
-            next
-          );
+          void updatePushFavorites(next);
         }
 
         return next;
@@ -1502,9 +1246,7 @@ export default function HomePage() {
     LEAGUES.forEach(
       (league) => {
         if (
-          !map.has(
-            league.country
-          )
+          !map.has(league.country)
         ) {
           map.set(
             league.country,
@@ -1513,9 +1255,7 @@ export default function HomePage() {
         }
 
         map
-          .get(
-            league.country
-          )!
+          .get(league.country)!
           .push(league);
       }
     );
@@ -1530,9 +1270,7 @@ export default function HomePage() {
       () =>
         LEAGUES.find(
           (league) =>
-            String(
-              league.id
-            ) ===
+            String(league.id) ===
             selectedLeagueId
         ) || null,
       [selectedLeagueId]
@@ -1542,9 +1280,7 @@ export default function HomePage() {
     useMemo(() => {
       let result = matches;
 
-      if (
-        selectedLeagueId
-      ) {
+      if (selectedLeagueId) {
         result =
           result.filter(
             (match) =>
@@ -1553,38 +1289,28 @@ export default function HomePage() {
           );
       }
 
-      if (
-        filter === "live"
-      ) {
+      if (filter === "live") {
         result =
           result.filter(
             (m) => m.isLive
           );
       }
 
-      if (
-        filter === "upcoming"
-      ) {
+      if (filter === "upcoming") {
         result =
           result.filter(
-            (m) =>
-              m.isUpcoming
+            (m) => m.isUpcoming
           );
       }
 
-      if (
-        filter === "finished"
-      ) {
+      if (filter === "finished") {
         result =
           result.filter(
-            (m) =>
-              m.isFinished
+            (m) => m.isFinished
           );
       }
 
-      if (
-        filter === "favorites"
-      ) {
+      if (filter === "favorites") {
         result =
           result.filter(
             (m) =>
@@ -1594,35 +1320,27 @@ export default function HomePage() {
           );
       }
 
-      if (
-        searchQuery.trim()
-      ) {
+      if (searchQuery.trim()) {
         const search =
-          searchQuery.toLowerCase();
+          searchQuery
+            .trim()
+            .toLowerCase();
 
         result =
           result.filter(
             (m) =>
               m.homeTeam
                 .toLowerCase()
-                .includes(
-                  search
-                ) ||
+                .includes(search) ||
               m.awayTeam
                 .toLowerCase()
-                .includes(
-                  search
-                ) ||
+                .includes(search) ||
               m.leagueName
                 .toLowerCase()
-                .includes(
-                  search
-                ) ||
+                .includes(search) ||
               m.country
                 .toLowerCase()
-                .includes(
-                  search
-                )
+                .includes(search)
           );
       }
 
@@ -1631,4 +1349,669 @@ export default function HomePage() {
       matches,
       selectedLeagueId,
       filter,
-      favorites
+      favorites,
+      searchQuery,
+    ]);
+
+  const liveCount =
+    matches.filter(
+      (m) => m.isLive
+    ).length;
+
+  const upcomingCount =
+    matches.filter(
+      (m) => m.isUpcoming
+    ).length;
+
+  const finishedCount =
+    matches.filter(
+      (m) => m.isFinished
+    ).length;
+
+  const clearLeague =
+    () => {
+      setSelectedLeagueId(null);
+      setMenuOpen(false);
+    };
+
+  const chooseLeague =
+    (leagueId: number) => {
+      setSelectedLeagueId(
+        String(leagueId)
+      );
+      setFilter("all");
+      setMenuOpen(false);
+    };
+
+  return (
+    <main className="min-h-screen bg-[#07140f] text-white">
+      <header className="sticky top-0 z-50 border-b border-emerald-900/60 bg-[#081812]/95 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
+          <a
+            href="/"
+            className="flex items-center gap-2"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500 text-[#06120d]">
+              <Trophy size={20} />
+            </div>
+
+            <div>
+              <div className="text-lg font-black tracking-tight">
+                GoGoalMatch
+              </div>
+
+              <div className="hidden text-[10px] uppercase tracking-[0.18em] text-emerald-400 sm:block">
+                Live Football
+              </div>
+            </div>
+          </a>
+
+          <nav className="hidden items-center gap-1 md:flex">
+            <a
+              href="/"
+              className="rounded-lg bg-emerald-500/15 px-4 py-2 text-sm font-semibold text-emerald-400"
+            >
+              LIVE
+            </a>
+
+            <a
+              href="/matches"
+              className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/5 hover:text-white"
+            >
+              Matches
+            </a>
+
+            <a
+              href="/matches?filter=finished"
+              className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/5 hover:text-white"
+            >
+              Results
+            </a>
+
+            <a
+              href="#"
+              className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/5 hover:text-white"
+            >
+              Standings
+            </a>
+
+            <a
+              href="#"
+              className="rounded-lg px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-white/5 hover:text-white"
+            >
+              Stats
+            </a>
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={
+                alertsEnabled
+                  ? disableAlerts
+                  : enableAlerts
+              }
+              className={`flex h-9 items-center gap-2 rounded-lg border px-3 text-xs font-bold transition ${
+                alertsEnabled
+                  ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-400"
+                  : "border-slate-700 bg-slate-900 text-slate-300"
+              }`}
+              title={
+                alertsEnabled
+                  ? "Alerts ON"
+                  : "Enable alerts"
+              }
+            >
+              {alertsEnabled ? (
+                <Volume2 size={16} />
+              ) : (
+                <BellOff size={16} />
+              )}
+
+              <span className="hidden sm:inline">
+                {alertsEnabled
+                  ? "Alerts ON"
+                  : "Alerts"}
+              </span>
+            </button>
+
+            <button
+              onClick={() =>
+                setMenuOpen(
+                  (value) => !value
+                )
+              }
+              className="rounded-lg border border-slate-700 bg-slate-900 p-2 text-slate-200 md:hidden"
+            >
+              {menuOpen ? (
+                <X size={20} />
+              ) : (
+                <Menu size={20} />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {menuOpen && (
+          <div className="border-t border-emerald-900/50 bg-[#081812] px-4 py-3 md:hidden">
+            <div className="grid grid-cols-2 gap-2">
+              <a
+                href="/"
+                className="rounded-lg bg-emerald-500/15 p-3 text-center text-sm font-bold text-emerald-400"
+              >
+                LIVE
+              </a>
+
+              <a
+                href="/matches"
+                className="rounded-lg bg-white/5 p-3 text-center text-sm font-bold"
+              >
+                Matches
+              </a>
+
+              <a
+                href="/matches?filter=finished"
+                className="rounded-lg bg-white/5 p-3 text-center text-sm font-bold"
+              >
+                Results
+              </a>
+
+              <a
+                href="#"
+                className="rounded-lg bg-white/5 p-3 text-center text-sm font-bold"
+              >
+                Stats
+              </a>
+            </div>
+          </div>
+        )}
+      </header>
+
+      <div className="mx-auto flex max-w-7xl gap-5 px-4 py-5">
+        <aside className="hidden w-64 shrink-0 lg:block">
+          <div className="sticky top-21 overflow-hidden rounded-2xl border border-emerald-900/50 bg-[#0a1b14]">
+            <div className="border-b border-emerald-900/50 p-4">
+              <div className="mb-3 text-xs font-black uppercase tracking-wider text-slate-400">
+                Leagues
+              </div>
+
+              <button
+                onClick={clearLeague}
+                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-semibold ${
+                  !selectedLeagueId
+                    ? "bg-emerald-500/15 text-emerald-400"
+                    : "text-slate-300 hover:bg-white/5"
+                }`}
+              >
+                <span>All Leagues</span>
+                {!selectedLeagueId && (
+                  <ChevronRight size={16} />
+                )}
+              </button>
+            </div>
+
+            <div className="max-h-[calc(100vh-190px)] overflow-y-auto p-2">
+              {countries.map(
+                ([country, leagues]) => {
+                  const open =
+                    openCountry ===
+                    country;
+
+                  return (
+                    <div
+                      key={country}
+                      className="mb-1"
+                    >
+                      <button
+                        onClick={() =>
+                          setOpenCountry(
+                            open
+                              ? null
+                              : country
+                          )
+                        }
+                        className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-bold text-slate-200 hover:bg-white/5"
+                      >
+                        <span>
+                          {country}
+                        </span>
+
+                        <ChevronDown
+                          size={15}
+                          className={`transition-transform ${
+                            open
+                              ? "rotate-180"
+                              : ""
+                          }`}
+                        />
+                      </button>
+
+                      {open && (
+                        <div className="ml-2 space-y-1 border-l border-emerald-900/60 pl-2">
+                          {leagues.map(
+                            (league) => (
+                              <button
+                                key={
+                                  league.id
+                                }
+                                onClick={() =>
+                                  chooseLeague(
+                                    league.id
+                                  )
+                                }
+                                className={`w-full rounded-md px-3 py-2 text-left text-xs ${
+                                  selectedLeagueId ===
+                                  String(
+                                    league.id
+                                  )
+                                    ? "bg-emerald-500/15 font-bold text-emerald-400"
+                                    : "text-slate-400 hover:bg-white/5 hover:text-white"
+                                }`}
+                              >
+                                {
+                                  league.name
+                                }
+                              </button>
+                            )
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+              )}
+            </div>
+          </div>
+        </aside>
+
+        <section className="min-w-0 flex-1">
+          <div className="mb-5">
+            <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-emerald-400">
+                  Football Scores
+                </p>
+
+                <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
+                  {selectedLeague
+                    ? selectedLeague.name
+                    : "Today's Matches"}
+                </h1>
+
+                <p className="mt-1 text-sm text-slate-400">
+                  Live scores, results and match statistics
+                </p>
+              </div>
+
+              <button
+                onClick={() =>
+                  void loadMatches()
+                }
+                className="flex w-fit items-center gap-2 rounded-lg border border-emerald-900/60 bg-[#0a1b14] px-3 py-2 text-xs font-bold text-slate-300 hover:border-emerald-500/40 hover:text-white"
+              >
+                <RefreshCw
+                  size={15}
+                  className={
+                    loading
+                      ? "animate-spin"
+                      : ""
+                  }
+                />
+                Refresh
+              </button>
+            </div>
+
+            <div className="mb-4 grid grid-cols-4 gap-2">
+              <button
+                onClick={() =>
+                  setFilter("all")
+                }
+                className={`rounded-xl border p-3 text-left ${
+                  filter === "all"
+                    ? "border-emerald-500/50 bg-emerald-500/10"
+                    : "border-emerald-900/50 bg-[#0a1b14]"
+                }`}
+              >
+                <div className="text-lg font-black">
+                  {matches.length}
+                </div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  All
+                </div>
+              </button>
+
+              <button
+                onClick={() =>
+                  setFilter("live")
+                }
+                className={`rounded-xl border p-3 text-left ${
+                  filter === "live"
+                    ? "border-red-500/50 bg-red-500/10"
+                    : "border-emerald-900/50 bg-[#0a1b14]"
+                }`}
+              >
+                <div className="text-lg font-black text-red-400">
+                  {liveCount}
+                </div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  Live
+                </div>
+              </button>
+
+              <button
+                onClick={() =>
+                  setFilter("upcoming")
+                }
+                className={`rounded-xl border p-3 text-left ${
+                  filter === "upcoming"
+                    ? "border-blue-500/50 bg-blue-500/10"
+                    : "border-emerald-900/50 bg-[#0a1b14]"
+                }`}
+              >
+                <div className="text-lg font-black text-blue-400">
+                  {upcomingCount}
+                </div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  Upcoming
+                </div>
+              </button>
+
+              <button
+                onClick={() =>
+                  setFilter("favorites")
+                }
+                className={`rounded-xl border p-3 text-left ${
+                  filter === "favorites"
+                    ? "border-yellow-500/50 bg-yellow-500/10"
+                    : "border-emerald-900/50 bg-[#0a1b14]"
+                }`}
+              >
+                <div className="text-lg font-black text-yellow-400">
+                  {favorites.length}
+                </div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  Favorites
+                </div>
+              </button>
+            </div>
+
+            <div className="relative">
+              <Search
+                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+              />
+
+              <input
+                value={searchQuery}
+                onChange={(event) =>
+                  setSearchQuery(
+                    event.target.value
+                  )
+                }
+                placeholder="Search team, league or country..."
+                className="w-full rounded-xl border border-emerald-900/50 bg-[#0a1b14] py-3 pl-10 pr-4 text-sm text-white outline-none placeholder:text-slate-600 focus:border-emerald-500/60"
+              />
+            </div>
+          </div>
+
+          {error && (
+            <div className="mb-4 rounded-xl border border-red-900/60 bg-red-950/30 p-4 text-sm text-red-300">
+              {error}
+            </div>
+          )}
+
+          {loading &&
+            matches.length === 0 && (
+              <div className="rounded-2xl border border-emerald-900/50 bg-[#0a1b14] p-10 text-center">
+                <RefreshCw
+                  size={28}
+                  className="mx-auto mb-3 animate-spin text-emerald-400"
+                />
+                <p className="text-sm font-semibold text-slate-300">
+                  Loading matches...
+                </p>
+              </div>
+            )}
+
+          {!loading &&
+            filteredMatches.length ===
+              0 && (
+              <div className="rounded-2xl border border-emerald-900/50 bg-[#0a1b14] p-10 text-center">
+                <Trophy
+                  size={30}
+                  className="mx-auto mb-3 text-slate-600"
+                />
+
+                <h2 className="font-bold text-slate-300">
+                  No matches found
+                </h2>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Try another filter or search.
+                </p>
+              </div>
+            )}
+
+          <div className="space-y-3">
+            {filteredMatches.map(
+              (match) => (
+                <a
+                  key={match.id}
+                  href={`/matches/${match.id}`}
+                  className="group block rounded-2xl border border-emerald-900/50 bg-[#0a1b14] p-4 transition hover:border-emerald-500/40 hover:bg-[#0d2119]"
+                >
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-xs font-bold text-emerald-400">
+                          {match.country}
+                        </span>
+
+                        <span className="text-slate-700">
+                          /
+                        </span>
+
+                        <span className="truncate text-xs text-slate-400">
+                          {match.leagueName}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={(event) =>
+                        toggleFavorite(
+                          match.id,
+                          event
+                        )
+                      }
+                      className="shrink-0 rounded-lg p-1.5 hover:bg-white/5"
+                      aria-label="Favorite"
+                    >
+                      <Star
+                        size={19}
+                        className={
+                          favorites.includes(
+                            match.id
+                          )
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-slate-600 group-hover:text-slate-400"
+                        }
+                      />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                    <div className="flex min-w-0 items-center justify-end gap-3">
+                      <span className="truncate text-right text-sm font-bold sm:text-base">
+                        {match.homeTeam}
+                      </span>
+
+                      {match.homeLogo ? (
+                        <img
+                          src={
+                            match.homeLogo
+                          }
+                          alt=""
+                          className="h-9 w-9 shrink-0 object-contain"
+                        />
+                      ) : (
+                        <div className="h-9 w-9 shrink-0 rounded-full bg-slate-800" />
+                      )}
+                    </div>
+
+                    <div className="min-w-[58px] text-center">
+                      {match.isLive ? (
+                        <>
+                          <div className="mb-1 text-[10px] font-black uppercase tracking-wider text-red-400">
+                            LIVE
+                          </div>
+
+                          <div className="text-xl font-black">
+                            {match.homeScore}
+                            <span className="mx-1 text-slate-600">
+                              -
+                            </span>
+                            {match.awayScore}
+                          </div>
+
+                          <div className="text-[10px] font-bold text-emerald-400">
+                            {match.minute}
+                          </div>
+                        </>
+                      ) : match.isFinished ? (
+                        <>
+                          <div className="mb-1 text-[10px] font-black uppercase tracking-wider text-slate-500">
+                            FT
+                          </div>
+
+                          <div className="text-xl font-black">
+                            {match.homeScore}
+                            <span className="mx-1 text-slate-600">
+                              -
+                            </span>
+                            {match.awayScore}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="mb-1 text-[10px] font-black uppercase tracking-wider text-blue-400">
+                            UPCOMING
+                          </div>
+
+                          <div className="text-sm font-black text-slate-300">
+                            {match.minute}
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    <div className="flex min-w-0 items-center gap-3">
+                      {match.awayLogo ? (
+                        <img
+                          src={
+                            match.awayLogo
+                          }
+                          alt=""
+                          className="h-9 w-9 shrink-0 object-contain"
+                        />
+                      ) : (
+                        <div className="h-9 w-9 shrink-0 rounded-full bg-slate-800" />
+                      )}
+
+                      <span className="truncate text-sm font-bold sm:text-base">
+                        {match.awayTeam}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between border-t border-emerald-900/30 pt-3">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+                      Match details
+                    </span>
+
+                    <ChevronRight
+                      size={15}
+                      className="text-slate-600 transition group-hover:translate-x-1 group-hover:text-emerald-400"
+                    />
+                  </div>
+                </a>
+              )
+            )}
+          </div>
+
+          <div className="mt-8 border-t border-emerald-900/40 pt-5 text-center">
+            <p className="text-xs text-slate-600">
+              GoGoalMatch · Live Scores,
+              Results and Football
+              Statistics
+            </p>
+
+            <p className="mt-1 text-[10px] text-slate-700">
+              {finishedCount} finished matches
+              available today
+            </p>
+          </div>
+        </section>
+      </div>
+
+      {alertMessage && (
+        <div className="fixed bottom-5 left-1/2 z-[100] w-[calc(100%-32px)] max-w-md -translate-x-1/2">
+          <div className="overflow-hidden rounded-2xl border border-emerald-500/40 bg-[#07140f]/95 shadow-2xl backdrop-blur">
+            <div className="flex items-center gap-3 p-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-xl">
+                {getEventIcon(
+                  alertMessage.type
+                )}
+              </div>
+
+              <div className="min-w-0">
+                <div className="text-sm font-black text-emerald-400">
+                  {alertMessage.title}
+                </div>
+
+                <div className="mt-0.5 truncate text-sm font-semibold text-white">
+                  {alertMessage.text}
+                </div>
+              </div>
+            </div>
+
+            <div className="h-1 bg-emerald-500/20">
+              <div className="h-full w-full animate-[shrink_6s_linear_forwards] bg-emerald-500" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx global>{`
+        @keyframes shrink {
+          from {
+            width: 100%;
+          }
+          to {
+            width: 0%;
+          }
+        }
+
+        html {
+          background: #07140f;
+        }
+
+        body {
+          margin: 0;
+        }
+
+        ::-webkit-scrollbar {
+          width: 7px;
+        }
+
+        ::-webkit-scrollbar-track {
+          background: #07140f;
+        }
+
+        ::-webkit-scrollbar-thumb {
+          background: #183c2d;
+          border-radius: 999px;
+        }
+      `}</style>
+    </main>
+  );
+}

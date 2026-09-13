@@ -3,19 +3,14 @@
 import React, { useState } from "react";
 import { 
   Trophy, 
-  Calendar, 
-  Clock, 
-  Activity, 
-  ChevronRight, 
   Search, 
   Star, 
   BarChart2, 
+  Activity, 
   Users, 
-  FileText,
-  ShieldAlert
+  ChevronRight 
 } from "lucide-react";
 
-// Örnek Lig ve Maç Veri Yapısı
 interface Match {
   id: string;
   minute: string;
@@ -36,16 +31,14 @@ interface League {
   id: string;
   name: string;
   country: string;
-  flag: string;
   matches: Match[];
 }
 
 const LEAGUES_DATA: League[] = [
   {
     id: "tr-super-lig",
-    name: "Trendyol Süper Lig",
-    country: "Türkiye",
-    flag: "🇹🇷",
+    name: "Super Lig",
+    country: "Turkey",
     matches: [
       {
         id: "m1",
@@ -55,7 +48,7 @@ const LEAGUES_DATA: League[] = [
         homeTeam: "Galatasaray",
         homeLogo: "GS",
         homeScore: 2,
-        awayTeam: "Fenerbahçe",
+        awayTeam: "Fenerbahce",
         awayLogo: "FB",
         awayScore: 1,
         htScore: "1 - 0",
@@ -67,23 +60,22 @@ const LEAGUES_DATA: League[] = [
         minute: "FT",
         isLive: false,
         isFinished: true,
-        homeTeam: "Beşiktaş",
+        homeTeam: "Besiktas",
         homeLogo: "BJK",
         homeScore: 3,
         awayTeam: "Trabzonspor",
         awayLogo: "TS",
         awayScore: 0,
         htScore: "2 - 0",
-        venue: "Tüpraş Stadyumu",
-        referee: "Ali Şansalan"
+        venue: "Tupras Stadyumu",
+        referee: "Ali Sansalan"
       }
     ]
   },
   {
     id: "eng-premier",
     name: "Premier League",
-    country: "İngiltere",
-    flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+    country: "England",
     matches: [
       {
         id: "m3",
@@ -120,8 +112,7 @@ const LEAGUES_DATA: League[] = [
   {
     id: "esp-la-liga",
     name: "La Liga",
-    country: "İspanya",
-    flag: "🇪🇸",
+    country: "Spain",
     matches: [
       {
         id: "m5",
@@ -135,7 +126,7 @@ const LEAGUES_DATA: League[] = [
         awayLogo: "BAR",
         awayScore: 1,
         htScore: "1 - 0",
-        venue: "Santiago Bernabéu",
+        venue: "Santiago Bernabeu",
         referee: "Gil Manzano"
       }
     ]
@@ -157,7 +148,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#0b0e14] text-slate-100 font-sans">
-      {/* Top Header */}
       <header className="border-b border-slate-800/80 bg-[#121721]/90 backdrop-blur sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setSelectedMatch(null)}>
@@ -174,36 +164,30 @@ export default function App() {
               <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
               <input 
                 type="text" 
-                placeholder="Takım veya lig ara..." 
+                placeholder="Search team or league..." 
                 className="bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-4 py-1.5 text-xs focus:outline-none focus:border-emerald-500 w-60 transition"
               />
             </div>
             <span className="bg-red-500/10 text-red-400 border border-red-500/20 px-3 py-1 rounded-full text-xs font-semibold flex items-center space-x-1.5">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-              <span>CANLI SKOR</span>
+              <span>LIVE SCORES</span>
             </span>
           </div>
         </div>
       </header>
 
-      {/* Main Container */}
       <main className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
-        
-        {/* Left Sidebar - Quick Leagues */}
         <aside className="hidden lg:block space-y-4">
           <div className="bg-[#121721] border border-slate-800 rounded-xl p-4">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center space-x-2">
               <Trophy className="w-4 h-4 text-emerald-400" />
-              <span>Favori Ligler</span>
+              <span>Top Leagues</span>
             </h3>
             <ul className="space-y-1 text-sm">
               {LEAGUES_DATA.map(league => (
                 <li key={league.id}>
                   <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800/60 transition flex items-center justify-between text-slate-300 hover:text-white">
-                    <span className="flex items-center space-x-2">
-                      <span>{league.flag}</span>
-                      <span>{league.name}</span>
-                    </span>
+                    <span>{league.name}</span>
                     <ChevronRight className="w-4 h-4 text-slate-600" />
                   </button>
                 </li>
@@ -212,12 +196,9 @@ export default function App() {
           </div>
         </aside>
 
-        {/* Center Content Area */}
         <section className="lg:col-span-3 space-y-4">
-          
           {!selectedMatch ? (
             <>
-              {/* Filter Tabs */}
               <div className="bg-[#121721] border border-slate-800 rounded-xl p-2 flex items-center justify-between">
                 <div className="flex space-x-1">
                   <button
@@ -226,7 +207,7 @@ export default function App() {
                       filter === "all" ? "bg-emerald-500 text-slate-950 font-bold" : "text-slate-400 hover:text-white"
                     }`}
                   >
-                    Tümü
+                    All
                   </button>
                   <button
                     onClick={() => setFilter("live")}
@@ -235,7 +216,7 @@ export default function App() {
                     }`}
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                    <span>Canlı</span>
+                    <span>Live</span>
                   </button>
                   <button
                     onClick={() => setFilter("finished")}
@@ -243,16 +224,15 @@ export default function App() {
                       filter === "finished" ? "bg-emerald-500 text-slate-950 font-bold" : "text-slate-400 hover:text-white"
                     }`}
                   >
-                    Bitenler
+                    Finished
                   </button>
                 </div>
 
                 <div className="text-xs text-slate-500 font-medium px-2">
-                  Bugün, 12 Eylül
+                  Today, Sep 12
                 </div>
               </div>
 
-              {/* Leagues and Matches List */}
               <div className="space-y-4">
                 {LEAGUES_DATA.map(league => {
                   const filteredMatches = league.matches.filter(m => {
@@ -265,15 +245,12 @@ export default function App() {
 
                   return (
                     <div key={league.id} className="bg-[#121721] border border-slate-800 rounded-xl overflow-hidden">
-                      {/* League Header */}
                       <div className="bg-slate-900/60 px-4 py-2.5 border-b border-slate-800 flex items-center space-x-2 text-xs font-semibold text-slate-300">
-                        <span>{league.flag}</span>
                         <span>{league.country}</span>
                         <span className="text-slate-600">•</span>
                         <span className="text-emerald-400">{league.name}</span>
                       </div>
 
-                      {/* Matches */}
                       <div className="divide-y divide-slate-800/50">
                         {filteredMatches.map(match => (
                           <div
@@ -292,7 +269,6 @@ export default function App() {
                               )}
                             </div>
 
-                            {/* Teams and Score */}
                             <div className="flex-1 grid grid-cols-3 items-center max-w-lg mx-auto">
                               <div className="flex items-center space-x-3 justify-end text-right">
                                 <span className="text-sm font-semibold group-hover:text-emerald-400 transition truncate">{match.homeTeam}</span>
@@ -323,13 +299,12 @@ export default function App() {
               </div>
             </>
           ) : (
-            /* Match Detail Card */
             <div className="space-y-4">
               <button 
                 onClick={() => setSelectedMatch(null)}
                 className="text-xs text-slate-400 hover:text-white flex items-center space-x-1 transition mb-2"
               >
-                <span>← Maç Listesine Dön</span>
+                <span>Back to Matches</span>
               </button>
 
               <div className="bg-[#121721] border border-slate-800 rounded-xl p-6 shadow-2xl">
@@ -359,7 +334,7 @@ export default function App() {
                       {selectedMatch.homeScore} : {selectedMatch.awayScore}
                     </span>
                     <span className="text-xs text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">
-                      İY: {selectedMatch.htScore}
+                      HT: {selectedMatch.htScore}
                     </span>
                   </div>
 
@@ -373,21 +348,20 @@ export default function App() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6 pt-4 border-t border-slate-800/80 text-xs text-slate-400 text-center">
                   <div>
-                    <span className="block text-slate-500 font-medium">STADYUM</span>
+                    <span className="block text-slate-500 font-medium">VENUE</span>
                     <span className="text-slate-200 font-semibold">{selectedMatch.venue}</span>
                   </div>
                   <div>
-                    <span className="block text-slate-500 font-medium">HAKEM</span>
+                    <span className="block text-slate-500 font-medium">REFEREE</span>
                     <span className="text-slate-200 font-semibold">{selectedMatch.referee}</span>
                   </div>
                   <div className="col-span-2 sm:col-span-1">
-                    <span className="block text-slate-500 font-medium">DURUM</span>
-                    <span className="text-emerald-400 font-semibold">{selectedMatch.isLive ? "Devam Ediyor" : "Tamamlandı"}</span>
+                    <span className="block text-slate-500 font-medium">STATUS</span>
+                    <span className="text-emerald-400 font-semibold">{selectedMatch.isLive ? "In Progress" : "Finished"}</span>
                   </div>
                 </div>
               </div>
 
-              {/* Sub Navigation */}
               <div className="flex border-b border-slate-800 text-sm font-medium">
                 <button
                   onClick={() => setActiveTab("stats")}
@@ -396,7 +370,7 @@ export default function App() {
                   }`}
                 >
                   <BarChart2 className="w-4 h-4" />
-                  <span>İstatistikler</span>
+                  <span>Statistics</span>
                 </button>
                 <button
                   onClick={() => setActiveTab("events")}
@@ -405,7 +379,7 @@ export default function App() {
                   }`}
                 >
                   <Activity className="w-4 h-4" />
-                  <span>Maç Özeti</span>
+                  <span>Events</span>
                 </button>
                 <button
                   onClick={() => setActiveTab("lineups")}
@@ -414,16 +388,15 @@ export default function App() {
                   }`}
                 >
                   <Users className="w-4 h-4" />
-                  <span>Kadro</span>
+                  <span>Lineups</span>
                 </button>
               </div>
 
-              {/* Stats Panel */}
               <div className="bg-[#121721] border border-slate-800 rounded-xl p-6 space-y-4">
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs font-bold">
                     <span className="text-emerald-400">58%</span>
-                    <span className="text-slate-400">Topla Oynama</span>
+                    <span className="text-slate-400">Ball Possession</span>
                     <span className="text-slate-300">42%</span>
                   </div>
                   <div className="h-2 bg-slate-800 rounded-full overflow-hidden flex">
@@ -435,7 +408,7 @@ export default function App() {
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs font-bold">
                     <span className="text-emerald-400">14</span>
-                    <span className="text-slate-400">Toplam Şut</span>
+                    <span className="text-slate-400">Total Shots</span>
                     <span className="text-slate-300">8</span>
                   </div>
                   <div className="h-2 bg-slate-800 rounded-full overflow-hidden flex">
@@ -446,7 +419,6 @@ export default function App() {
               </div>
             </div>
           )}
-
         </section>
       </main>
     </div>

@@ -251,6 +251,31 @@ function playAlertSound(type: AlertType) {
   else if (type === "var") playVarSound();
 }
 
+function cleanTeamName(
+  value: unknown,
+  fallback: string
+): string {
+  if (
+    typeof value !== "string"
+  ) {
+    return fallback;
+  }
+
+  const cleaned = value.trim();
+
+  return cleaned.length > 0
+    ? cleaned
+    : fallback;
+}
+
+function cleanLogo(
+  value: unknown
+): string {
+  return typeof value === "string"
+    ? value.trim()
+    : "";
+}
+
 function convertFixture(
   fixture: ApiFixture
 ): Match | null {
@@ -267,6 +292,16 @@ function convertFixture(
   const home = fixture.teams?.home;
   const away = fixture.teams?.away;
 
+  const homeTeam = cleanTeamName(
+    home?.name,
+    "Home"
+  );
+
+  const awayTeam = cleanTeamName(
+    away?.name,
+    "Away"
+  );
+
   const isLive =
     LIVE_STATUSES.includes(status);
 
@@ -276,10 +311,13 @@ function convertFixture(
   let minute = "";
 
   if (isLive) {
-    if (status === "HT") minute = "HT";
-    else if (status === "BT") minute = "BT";
-    else if (status === "P") minute = "P";
-    else if (
+    if (status === "HT") {
+      minute = "HT";
+    } else if (status === "BT") {
+      minute = "BT";
+    } else if (status === "P") {
+      minute = "P";
+    } else if (
       elapsed !== null &&
       elapsed !== undefined
     ) {
@@ -306,18 +344,22 @@ function convertFixture(
     status,
     isLive,
     isFinished,
-    isUpcoming: !isLive && !isFinished,
-    homeTeam: home?.name || "Home",
-    homeLogo: home?.logo || "",
-    homeScore: fixture.goals?.home ?? "-",
-    awayTeam: away?.name || "Away",
-    awayLogo: away?.logo || "",
-    awayScore: fixture.goals?.away ?? "-",
+    isUpcoming:
+      !isLive && !isFinished,
+    homeTeam,
+    homeLogo: cleanLogo(home?.logo),
+    homeScore:
+      fixture.goals?.home ?? "-",
+    awayTeam,
+    awayLogo: cleanLogo(away?.logo),
+    awayScore:
+      fixture.goals?.away ?? "-",
     leagueId: String(
       fixture.league?.id || "unknown"
     ),
     leagueName:
-      fixture.league?.name || "Unknown League",
+      fixture.league?.name ||
+      "Unknown League",
     country:
       fixture.league?.country || "",
   };
@@ -349,12 +391,18 @@ function getAlertType(
     event.detail?.toLowerCase() || "";
 
   if (type === "goal") {
-    if (detail.includes("missed")) return null;
+    if (detail.includes("missed")) {
+      return null;
+    }
+
     return "goal";
   }
 
   if (type === "card") {
-    if (detail.includes("red")) return "red";
+    if (detail.includes("red")) {
+      return "red";
+    }
+
     return "yellow";
   }
 
@@ -380,6 +428,7 @@ function getEventTitle(
   if (type === "yellow") return "YELLOW CARD";
   if (type === "red") return "RED CARD";
   if (type === "penalty") return "PENALTY";
+
   return "VAR";
 }
 
@@ -390,6 +439,7 @@ function getEventIcon(
   if (type === "yellow") return "🟨";
   if (type === "red") return "🟥";
   if (type === "penalty") return "⚽";
+
   return "📺";
 }
 
@@ -411,7 +461,8 @@ function urlBase64ToUint8Array(
 
   return Uint8Array.from(
     Array.from(rawData).map(
-      (char) => char.charCodeAt(0)
+      (char) =>
+        char.charCodeAt(0)
     )
   );
 }
@@ -497,6 +548,7 @@ export default function HomePage() {
               "Push subscription save failed:",
               response.status
             );
+
             return false;
           }
 
@@ -519,7 +571,8 @@ export default function HomePage() {
         favoriteIds: string[]
       ) => {
         if (
-          typeof window === "undefined"
+          typeof window ===
+          "undefined"
         ) {
           return false;
         }
@@ -544,13 +597,18 @@ export default function HomePage() {
           console.error(
             "NEXT_PUBLIC_VAPID_PUBLIC_KEY is missing."
           );
+
           return false;
         }
 
         try {
           const registration =
             await navigator.serviceWorker.register(
-              "/sw.js"
+              "/sw.js",
+              {
+                updateViaCache:
+                  "none",
+              }
             );
 
           await navigator.serviceWorker.ready;
@@ -811,7 +869,8 @@ export default function HomePage() {
         );
 
       if (
-        favoriteMatches.length === 0
+        favoriteMatches.length ===
+        0
       ) {
         return;
       }
@@ -973,6 +1032,7 @@ export default function HomePage() {
                   alertsEnabledRef.current
                 ) {
                   playAlertSound(type);
+
                   sendBrowserNotification(
                     alert
                   );
@@ -1001,6 +1061,7 @@ export default function HomePage() {
                   alertsEnabledRef.current
                 ) {
                   playGoalSound();
+
                   sendBrowserNotification(
                     alert
                   );
@@ -1044,14 +1105,17 @@ export default function HomePage() {
 
   useEffect(() => {
     if (
-      typeof window === "undefined" ||
+      typeof window ===
+        "undefined" ||
       !("serviceWorker" in navigator)
     ) {
       return;
     }
 
     navigator.serviceWorker
-      .register("/sw.js")
+      .register("/sw.js", {
+        updateViaCache: "none",
+      })
       .catch((error) => {
         console.error(
           "Service Worker registration failed:",
@@ -1123,7 +1187,8 @@ export default function HomePage() {
     if (!alertsEnabled) return;
 
     if (
-      typeof window === "undefined" ||
+      typeof window ===
+        "undefined" ||
       !("serviceWorker" in navigator) ||
       !("PushManager" in window)
     ) {
@@ -1229,7 +1294,9 @@ export default function HomePage() {
           pushSubscriptionRef.current &&
           alertsEnabledRef.current
         ) {
-          void updatePushFavorites(next);
+          void updatePushFavorites(
+            next
+          );
         }
 
         return next;
@@ -1379,6 +1446,7 @@ export default function HomePage() {
       setSelectedLeagueId(
         String(leagueId)
       );
+
       setFilter("all");
       setMenuOpen(false);
     };
@@ -1657,6 +1725,7 @@ export default function HomePage() {
                       : ""
                   }
                 />
+
                 Refresh
               </button>
             </div>
@@ -1803,7 +1872,7 @@ export default function HomePage() {
                 <a
                   key={match.id}
                   href={`/matches/${match.id}`}
-                  className="group block overflow-hidden rounded-2xl border border-emerald-900/50 bg-[#0a1b14] p-4 transition hover:border-emerald-500/40 hover:bg-[#0d2119]"
+                  className="group block overflow-hidden rounded-2xl border border-emerald-900/50 bg-[#0a1b14] p-3 transition hover:border-emerald-500/40 hover:bg-[#0d2119] sm:p-4"
                 >
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <div className="min-w-0 flex-1">
@@ -1845,65 +1914,131 @@ export default function HomePage() {
                     </button>
                   </div>
 
-                  {/* TEAM ROW - SAFARI / MOBILE */}
+                  {/* =====================================================
+                      TEAM ROW
+                      Mobile Safari-safe layout.
+                      ===================================================== */}
                   <div
-                    className="flex w-full min-w-0 items-center gap-2 sm:gap-4"
+                    className="team-match-row"
                     style={{
-                      WebkitBoxSizing: "border-box",
-                      boxSizing: "border-box",
+                      width: "100%",
+                      minWidth: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent:
+                        "space-between",
+                      gap: "8px",
                     }}
                   >
-                    {/* HOME TEAM */}
+                    {/* HOME */}
                     <div
-                      className="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3"
+                      className="team-side team-home"
                       style={{
                         minWidth: 0,
-                        flexBasis: 0,
+                        flex: "1 1 0%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent:
+                          "flex-end",
+                        gap: "8px",
                       }}
                     >
                       <div
-                        className="min-w-0 flex-1 text-right"
+                        className="team-name team-name-home"
                         style={{
                           minWidth: 0,
-                          overflow: "visible",
+                          flex: "1 1 0%",
+                          width: 0,
+                          display: "block",
+                          color: "#ffffff",
+                          textAlign: "right",
+                          fontSize:
+                            "clamp(12px, 3.5vw, 16px)",
+                          fontWeight: 700,
+                          lineHeight: 1.18,
+                          whiteSpace: "normal",
+                          overflowWrap:
+                            "anywhere",
+                          wordBreak:
+                            "break-word",
+                          visibility:
+                            "visible",
+                          opacity: 1,
                         }}
                       >
-                        <span
-                          className="block text-sm font-bold leading-snug text-white sm:text-base"
-                          style={{
-                            whiteSpace: "normal",
-                            overflowWrap: "break-word",
-                            wordBreak: "break-word",
-                            color: "#ffffff",
-                            display: "block",
-                            visibility: "visible",
-                            opacity: 1,
-                          }}
-                        >
-                          {match.homeTeam}
-                        </span>
+                        {match.homeTeam}
                       </div>
 
-                      {match.homeLogo ? (
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center sm:h-11 sm:w-11">
+                      <div
+                        className="team-logo"
+                        style={{
+                          width: "40px",
+                          minWidth: "40px",
+                          height: "40px",
+                          minHeight: "40px",
+                          flex:
+                            "0 0 40px",
+                          display: "flex",
+                          alignItems:
+                            "center",
+                          justifyContent:
+                            "center",
+                        }}
+                      >
+                        {match.homeLogo ? (
                           <img
-                            src={match.homeLogo}
-                            alt={match.homeTeam}
-                            className="block max-h-10 max-w-10 object-contain sm:max-h-11 sm:max-w-11"
+                            src={
+                              match.homeLogo
+                            }
+                            alt={
+                              match.homeTeam
+                            }
+                            width={40}
+                            height={40}
+                            loading="lazy"
+                            decoding="async"
+                            style={{
+                              display:
+                                "block",
+                              width:
+                                "auto",
+                              height:
+                                "auto",
+                              maxWidth:
+                                "40px",
+                              maxHeight:
+                                "40px",
+                              objectFit:
+                                "contain",
+                            }}
                           />
-                        </div>
-                      ) : (
-                        <div className="h-10 w-10 shrink-0 rounded-full bg-slate-800 sm:h-11 sm:w-11" />
-                      )}
+                        ) : (
+                          <div
+                            style={{
+                              width:
+                                "40px",
+                              height:
+                                "40px",
+                              borderRadius:
+                                "999px",
+                              background:
+                                "#1e293b",
+                            }}
+                          />
+                        )}
+                      </div>
                     </div>
 
-                    {/* SCORE / TIME */}
+                    {/* SCORE */}
                     <div
-                      className="shrink-0 text-center"
+                      className="team-score"
                       style={{
                         width: "68px",
                         minWidth: "68px",
-                        flex: "0 0 68px",
+                        flex:
+                          "0 0 68px",
+                        textAlign:
+                          "center",
                       }}
                     >
                       {match.isLive ? (
@@ -1914,9 +2049,11 @@ export default function HomePage() {
 
                           <div className="text-xl font-black leading-none sm:text-2xl">
                             {match.homeScore}
+
                             <span className="mx-1 text-slate-600">
                               -
                             </span>
+
                             {match.awayScore}
                           </div>
 
@@ -1932,9 +2069,11 @@ export default function HomePage() {
 
                           <div className="text-xl font-black leading-none sm:text-2xl">
                             {match.homeScore}
+
                             <span className="mx-1 text-slate-600">
                               -
                             </span>
+
                             {match.awayScore}
                           </div>
                         </>
@@ -1951,47 +2090,102 @@ export default function HomePage() {
                       )}
                     </div>
 
-                    {/* AWAY TEAM */}
+                    {/* AWAY */}
                     <div
-                      className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3"
+                      className="team-side team-away"
                       style={{
                         minWidth: 0,
-                        flexBasis: 0,
+                        flex: "1 1 0%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent:
+                          "flex-start",
+                        gap: "8px",
                       }}
                     >
-                      {match.awayLogo ? (
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center sm:h-11 sm:w-11">
-                          <img
-                            src={match.awayLogo}
-                            alt={match.awayTeam}
-                            className="block max-h-10 max-w-10 object-contain sm:max-h-11 sm:max-w-11"
-                          />
-                        </div>
-                      ) : (
-                        <div className="h-10 w-10 shrink-0 rounded-full bg-slate-800 sm:h-11 sm:w-11" />
-                      )}
-
                       <div
-                        className="min-w-0 flex-1 text-left"
+                        className="team-logo"
                         style={{
-                          minWidth: 0,
-                          overflow: "visible",
+                          width: "40px",
+                          minWidth: "40px",
+                          height: "40px",
+                          minHeight: "40px",
+                          flex:
+                            "0 0 40px",
+                          display: "flex",
+                          alignItems:
+                            "center",
+                          justifyContent:
+                            "center",
                         }}
                       >
-                        <span
-                          className="block text-sm font-bold leading-snug text-white sm:text-base"
-                          style={{
-                            whiteSpace: "normal",
-                            overflowWrap: "break-word",
-                            wordBreak: "break-word",
-                            color: "#ffffff",
-                            display: "block",
-                            visibility: "visible",
-                            opacity: 1,
-                          }}
-                        >
-                          {match.awayTeam}
-                        </span>
+                        {match.awayLogo ? (
+                          <img
+                            src={
+                              match.awayLogo
+                            }
+                            alt={
+                              match.awayTeam
+                            }
+                            width={40}
+                            height={40}
+                            loading="lazy"
+                            decoding="async"
+                            style={{
+                              display:
+                                "block",
+                              width:
+                                "auto",
+                              height:
+                                "auto",
+                              maxWidth:
+                                "40px",
+                              maxHeight:
+                                "40px",
+                              objectFit:
+                                "contain",
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width:
+                                "40px",
+                              height:
+                                "40px",
+                              borderRadius:
+                                "999px",
+                              background:
+                                "#1e293b",
+                            }}
+                          />
+                        )}
+                      </div>
+
+                      <div
+                        className="team-name team-name-away"
+                        style={{
+                          minWidth: 0,
+                          flex: "1 1 0%",
+                          width: 0,
+                          display: "block",
+                          color: "#ffffff",
+                          textAlign: "left",
+                          fontSize:
+                            "clamp(12px, 3.5vw, 16px)",
+                          fontWeight: 700,
+                          lineHeight: 1.18,
+                          whiteSpace: "normal",
+                          overflowWrap:
+                            "anywhere",
+                          wordBreak:
+                            "break-word",
+                          visibility:
+                            "visible",
+                          opacity: 1,
+                        }}
+                      >
+                        {match.awayTeam}
                       </div>
                     </div>
                   </div>
@@ -2115,12 +2309,95 @@ export default function HomePage() {
         body {
           margin: 0;
           overflow-x: hidden;
+          -webkit-text-size-adjust: 100%;
         }
 
         *,
         *::before,
         *::after {
           box-sizing: border-box;
+        }
+
+        .team-match-row {
+          -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+        }
+
+        .team-side {
+          -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+        }
+
+        .team-name {
+          -webkit-box-sizing: border-box;
+          box-sizing: border-box;
+          -webkit-hyphens: auto;
+          hyphens: auto;
+        }
+
+        .team-name-home,
+        .team-name-away {
+          color: #ffffff !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+        }
+
+        @media (max-width: 480px) {
+          .team-match-row {
+            gap: 6px !important;
+          }
+
+          .team-side {
+            gap: 6px !important;
+          }
+
+          .team-logo {
+            width: 36px !important;
+            min-width: 36px !important;
+            height: 36px !important;
+            min-height: 36px !important;
+            flex-basis: 36px !important;
+          }
+
+          .team-logo img {
+            max-width: 36px !important;
+            max-height: 36px !important;
+          }
+
+          .team-name-home,
+          .team-name-away {
+            font-size: 12px !important;
+            line-height: 1.15 !important;
+          }
+
+          .team-score {
+            width: 64px !important;
+            min-width: 64px !important;
+            flex-basis: 64px !important;
+          }
+        }
+
+        @media (min-width: 640px) {
+          .team-logo {
+            width: 44px;
+            min-width: 44px;
+            height: 44px;
+            min-height: 44px;
+            flex-basis: 44px;
+          }
+
+          .team-logo img {
+            max-width: 44px;
+            max-height: 44px;
+          }
+
+          .team-side {
+            gap: 12px;
+          }
+
+          .team-match-row {
+            gap: 12px;
+          }
         }
 
         ::-webkit-scrollbar {

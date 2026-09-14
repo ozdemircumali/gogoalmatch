@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "GoGoalMatch - Match Details",
-  description: "Live Scores, Results and Football Statistics",
+  title: "GoGoalMatch - Live Football Scores",
+  description:
+    "Live Scores, Results and Football Statistics",
   manifest: "/manifest.json",
 };
 
@@ -13,10 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <script src="https://cdn.tailwindcss.com"></script>
-      </head>
-      <body className="bg-slate-950 text-slate-100 antialiased font-sans min-h-screen">
+      <body className="min-h-screen bg-[#07140f] font-sans text-white antialiased">
         {children}
       </body>
     </html>

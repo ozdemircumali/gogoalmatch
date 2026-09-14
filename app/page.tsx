@@ -1,76 +1,78 @@
-{/* TEAM ROW */}
+{/* TEAM ROW - TEAM NAMES FIX */}
 <div
-  className="grid w-full grid-cols-[minmax(0,1fr)_72px_minmax(0,1fr)] items-center gap-1 sm:grid-cols-[minmax(0,1fr)_90px_minmax(0,1fr)] sm:gap-3"
   style={{
     width: "100%",
     minWidth: 0,
+    display: "grid",
+    gridTemplateColumns:
+      "minmax(0, 1fr) 38px 72px 38px minmax(0, 1fr)",
+    alignItems: "center",
+    columnGap: "6px",
   }}
 >
-  {/* HOME */}
+  {/* HOME TEAM NAME */}
   <div
-    className="flex min-w-0 items-center justify-end gap-1.5 sm:gap-3"
     style={{
       width: "100%",
       minWidth: 0,
+      display: "block",
+      textAlign: "right",
+      overflow: "visible",
     }}
   >
-    <div
+    <span
       style={{
+        display: "block",
+        width: "100%",
         minWidth: 0,
-        width: 0,
-        flex: "1 1 0%",
+        color: "#ffffff",
+        fontSize: "14px",
+        fontWeight: 800,
+        lineHeight: "18px",
         textAlign: "right",
+        whiteSpace: "normal",
+        overflow: "visible",
+        textOverflow: "clip",
+        overflowWrap: "break-word",
+        wordBreak: "normal",
+        visibility: "visible",
+        opacity: 1,
       }}
     >
-      <div
+      {match.homeTeam}
+    </span>
+  </div>
+
+  {/* HOME LOGO */}
+  <div
+    style={{
+      width: "38px",
+      height: "38px",
+      minWidth: "38px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+    }}
+  >
+    {match.homeLogo ? (
+      <img
+        src={match.homeLogo}
+        alt={match.homeTeam}
+        width={38}
+        height={38}
         style={{
           display: "block",
-          width: "100%",
-          minWidth: 0,
-          color: "#ffffff",
-          fontSize: "13px",
-          fontWeight: 700,
-          lineHeight: "1.2",
-          whiteSpace: "normal",
-          overflowWrap: "anywhere",
-          wordBreak: "break-word",
-          visibility: "visible",
-          opacity: 1,
+          width: "38px",
+          height: "38px",
+          objectFit: "contain",
         }}
-      >
-        {String(match.homeTeam || "Home")}
-      </div>
-    </div>
-
-    {match.homeLogo ? (
-      <div
-        style={{
-          width: 36,
-          height: 36,
-          minWidth: 36,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <img
-          src={match.homeLogo}
-          alt=""
-          style={{
-            display: "block",
-            width: "100%",
-            height: "100%",
-            objectFit: "contain",
-          }}
-        />
-      </div>
+      />
     ) : (
       <div
         style={{
-          width: 36,
-          height: 36,
-          minWidth: 36,
-          borderRadius: "9999px",
+          width: "34px",
+          height: "34px",
+          borderRadius: "50%",
           background: "#1e293b",
         }}
       />
@@ -90,10 +92,10 @@
         <div
           style={{
             marginBottom: "4px",
+            color: "#f87171",
             fontSize: "10px",
             fontWeight: 900,
-            letterSpacing: "0.08em",
-            color: "#f87171",
+            letterSpacing: "1px",
           }}
         >
           LIVE
@@ -101,17 +103,18 @@
 
         <div
           style={{
+            color: "#ffffff",
             fontSize: "21px",
             fontWeight: 900,
-            lineHeight: 1,
+            lineHeight: "24px",
             whiteSpace: "nowrap",
           }}
         >
           {match.homeScore}
           <span
             style={{
+              color: "#64748b",
               margin: "0 4px",
-              color: "#475569",
             }}
           >
             -
@@ -122,9 +125,9 @@
         <div
           style={{
             marginTop: "4px",
-            fontSize: "10px",
-            fontWeight: 700,
             color: "#34d399",
+            fontSize: "10px",
+            fontWeight: 800,
           }}
         >
           {match.minute}
@@ -135,10 +138,10 @@
         <div
           style={{
             marginBottom: "4px",
+            color: "#64748b",
             fontSize: "10px",
             fontWeight: 900,
-            letterSpacing: "0.08em",
-            color: "#64748b",
+            letterSpacing: "1px",
           }}
         >
           FT
@@ -146,17 +149,18 @@
 
         <div
           style={{
+            color: "#ffffff",
             fontSize: "21px",
             fontWeight: 900,
-            lineHeight: 1,
+            lineHeight: "24px",
             whiteSpace: "nowrap",
           }}
         >
           {match.homeScore}
           <span
             style={{
+              color: "#64748b",
               margin: "0 4px",
-              color: "#475569",
             }}
           >
             -
@@ -169,10 +173,10 @@
         <div
           style={{
             marginBottom: "4px",
+            color: "#60a5fa",
             fontSize: "9px",
             fontWeight: 900,
-            letterSpacing: "0.06em",
-            color: "#60a5fa",
+            letterSpacing: "0.5px",
           }}
         >
           UPCOMING
@@ -180,9 +184,9 @@
 
         <div
           style={{
+            color: "#cbd5e1",
             fontSize: "13px",
             fontWeight: 900,
-            color: "#cbd5e1",
             whiteSpace: "nowrap",
           }}
         >
@@ -192,74 +196,72 @@
     )}
   </div>
 
-  {/* AWAY */}
+  {/* AWAY LOGO */}
   <div
-    className="flex min-w-0 items-center gap-1.5 sm:gap-3"
     style={{
-      width: "100%",
-      minWidth: 0,
+      width: "38px",
+      height: "38px",
+      minWidth: "38px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
     }}
   >
     {match.awayLogo ? (
-      <div
+      <img
+        src={match.awayLogo}
+        alt={match.awayTeam}
+        width={38}
+        height={38}
         style={{
-          width: 36,
-          height: 36,
-          minWidth: 36,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          display: "block",
+          width: "38px",
+          height: "38px",
+          objectFit: "contain",
         }}
-      >
-        <img
-          src={match.awayLogo}
-          alt=""
-          style={{
-            display: "block",
-            width: "100%",
-            height: "100%",
-            objectFit: "contain",
-          }}
-        />
-      </div>
+      />
     ) : (
       <div
         style={{
-          width: 36,
-          height: 36,
-          minWidth: 36,
-          borderRadius: "9999px",
+          width: "34px",
+          height: "34px",
+          borderRadius: "50%",
           background: "#1e293b",
         }}
       />
     )}
+  </div>
 
-    <div
+  {/* AWAY TEAM NAME */}
+  <div
+    style={{
+      width: "100%",
+      minWidth: 0,
+      display: "block",
+      textAlign: "left",
+      overflow: "visible",
+    }}
+  >
+    <span
       style={{
+        display: "block",
+        width: "100%",
         minWidth: 0,
-        width: 0,
-        flex: "1 1 0%",
+        color: "#ffffff",
+        fontSize: "14px",
+        fontWeight: 800,
+        lineHeight: "18px",
         textAlign: "left",
+        whiteSpace: "normal",
+        overflow: "visible",
+        textOverflow: "clip",
+        overflowWrap: "break-word",
+        wordBreak: "normal",
+        visibility: "visible",
+        opacity: 1,
       }}
     >
-      <div
-        style={{
-          display: "block",
-          width: "100%",
-          minWidth: 0,
-          color: "#ffffff",
-          fontSize: "13px",
-          fontWeight: 700,
-          lineHeight: "1.2",
-          whiteSpace: "normal",
-          overflowWrap: "anywhere",
-          wordBreak: "break-word",
-          visibility: "visible",
-          opacity: 1,
-        }}
-      >
-        {String(match.awayTeam || "Away")}
-      </div>
-    </div>
+      {match.awayTeam}
+    </span>
   </div>
 </div>
